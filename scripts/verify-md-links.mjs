@@ -1,7 +1,7 @@
 /**
  * Check that relative Markdown links resolve to existing files. External URLs,
  * mailto, and pure-anchor links are not checked; anchors on local targets are stripped.
- * Links inside fenced code are ignored. Archived Agent Notes are skipped as sources.
+ * Links inside fenced code and inline code spans are ignored. Archived Agent Notes are skipped as sources.
  */
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -16,7 +16,9 @@ for (const rel of markdownFiles(root)) {
   const { lines, fenced } = markdownLines(readText(root, rel))
   lines.forEach((line, i) => {
     if (fenced[i]) return
-    for (const m of line.matchAll(LINK)) {
+    // Inline code spans hold examples, not references.
+    const prose = line.replace(/`[^`]*`/g, '')
+    for (const m of prose.matchAll(LINK)) {
       const target = m[1]
       if (/^(https?:|mailto:|#|tel:)/i.test(target)) continue
       const path = decodeURIComponent(target.split('#')[0])
