@@ -46,7 +46,7 @@ describe('runCli (real composition through the public entry)', () => {
 
   it('reports a default-exported function plugin as a handled plugin-invalid failure, not a defect', async () => {
     const plugin = ws.file('tag.mjs', DEFAULT_FUNCTION_PLUGIN)
-    const result = await runCli(['--config', ws.config({ plugins: ['./tag.mjs'] }), 'list'])
+    const result = await runCli(['--profile', ws.config({ plugins: ['./tag.mjs'] }), 'list'])
     expect(result).toMatchObject({ kind: 'error', error: { kind: 'plugin-invalid' } })
     if (result.kind !== 'error') throw new Error('unreachable')
     expect(result.error.message).toContain(plugin)
