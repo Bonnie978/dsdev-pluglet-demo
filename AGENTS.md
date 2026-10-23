@@ -22,7 +22,7 @@ pnpm run lint                 # lint
 pnpm run test:docs    # 无需构建的文档 gate（doc-quick 聚合）
 pnpm run doc-sync     # 全部文档 gate
 pnpm run hygiene      # 包/依赖/发布布局检查
-pnpm run change-scope -- --base <ref>   # 变更范围报告（JSON）
+node scripts/change-scope.mjs --base <ref>   # 变更范围报告（JSON）；不要经 `run … --` 透传
 ```
 
 ### 本地只跑相关检查
