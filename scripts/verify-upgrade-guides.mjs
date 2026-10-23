@@ -1,16 +1,20 @@
 /**
  * Enforce upgrade-guide layout: `docs/upgrade-guide/v<version>/<item>/guide.md` with
- * `kind: upgrade-guide` frontmatter and `## Change` + `## Migration` sections; an item
- * directory holds only guide files (no index, no attachments).
+ * `kind: upgrade-guide` frontmatter, `## Change` + `## Migration` sections, and at most
+ * MAX_WORDS words (600, CJK-aware); an item directory holds only guide files (no index, no attachments).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { repoRoot } from './lib/repo-files.mjs'
+import { countWords, resolveRoot } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const base = resolve(root, 'docs/upgrade-guide')
 if (!existsSync(base)) { console.log('verify-upgrade-guides: no docs/upgrade-guide; nothing to check.'); process.exit(0) }
 
+/** A guide states one break and its migration; longer text belongs in docs or an Agent Note.
+ * DeepSeek Harness caps guides at 500 `wc -w` words; the CJK-aware count here runs higher for
+ * Chinese prose, so the ceiling is 600. */
+const MAX_WORDS = 600
 const errors = []
 let count = 0
 for (const version of readdirSync(base).filter(v => statSync(join(base, v)).isDirectory())) {
@@ -25,6 +29,8 @@ for (const version of readdirSync(base).filter(v => statSync(join(base, v)).isDi
     const text = readFileSync(join(base, version, item, 'guide.md'), 'utf8')
     if (!/^---\n(?:.*\n)*?kind:\s*upgrade-guide\n(?:.*\n)*?---\n/.test(text)) errors.push(`${rel}/guide.md: frontmatter must declare kind: upgrade-guide`)
     for (const req of ['## Change', '## Migration']) if (!text.split('\n').some(l => l.trim() === req)) errors.push(`${rel}/guide.md: missing \`${req}\``)
+    const words = countWords(text)
+    if (words > MAX_WORDS) errors.push(`${rel}/guide.md: ${words} words exceeds the ${MAX_WORDS}-word guide limit; move background to docs or an Agent Note and keep the reader's actions`)
   }
 }
 

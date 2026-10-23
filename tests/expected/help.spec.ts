@@ -13,7 +13,7 @@ describe('help output', () => {
   afterEach(() => { ws.dispose() })
 
   it('matches the recorded expected output', async () => {
-    const result = await runCli(['--config', ws.config({}), 'help'])
+    const result = await runCli(['--profile', ws.config({}), 'help'])
     if (result.kind !== 'ok') throw new Error(result.error.message)
     const actual = `${result.lines.join('\n')}\n`
     if (process.env.DSDEV_SNAPSHOT === 'refresh') writeFileSync(EXPECTED, actual)

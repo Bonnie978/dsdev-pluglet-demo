@@ -8,7 +8,8 @@ pluglet 的 Agent 常备命令。改核心模块前读 [docs/architecture.md](do
 src/          源码（按模块分目录，模块 README 是该模块的契约）
 tests/        测试，与它锻炼的模块同名
 docs/         文档（docs/AGENTS.md 定义层级）
-.agents/      Agent Note 与 skill
+.agents/      Agent Note（.agents/notes）
+.claude/      skill（.claude/skills，随代码提交）
 scripts/      gate 与生成器
 tools/        模型可见的工具清单（见 README「给 LLM Agent 暴露工具」）
 ```
@@ -28,7 +29,7 @@ node scripts/change-scope.mjs --base <ref>   # 变更范围报告（JSON）；�
 
 ### 本地只跑相关检查
 
-push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.md) 选最窄的、会因回归变红的检查；只报告跑过的命令。永不默认跑全量；CI 拥有全量矩阵。钩子故意很窄：pre-commit 查 staged 空白与 Markdown 换行，pre-push 只跑类型检查。
+push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.md) 选最窄的、会因回归变红的检查；只报告跑过的命令。永不默认跑全量；全量聚合由 CI 在每个 PR 上跑（[workflow](.github/workflows/dsdev-gates.yml)）。钩子故意很窄：pre-commit 查 staged 空白与 Markdown 换行，pre-push 只跑类型检查。
 
 ## 约定
 
@@ -58,4 +59,4 @@ push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.m
 
 ## 编辑本文件
 
-`CLAUDE.md` 是本文件的符号链接；改真实文件。每条规则自包含并链接高层文档。字数预算在 `scripts/doc-budgets.manifest.json`；超了先搬迁再压缩，确有必要才提高。
+`CLAUDE.md` 是本文件的符号链接；改真实文件。skill 复制在 `.claude/skills/`，随代码提交；升级 skill 时整组替换并在 PR 里写版本。每条规则自包含并链接高层文档。字数预算在 `scripts/doc-budgets.manifest.json`；超了先搬迁再压缩，确有必要才提高。

@@ -31,6 +31,59 @@ describe('pluglet bin', () => {
     expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'ship it', done: false }])
   })
 
+  it('reads the profile named by --profile', () => {
+    const profile = ws.file('other.profile.json', '{}\n')
+    const r = pluglet(ws.root, '--profile', profile, 'add', 'via', 'flag')
+    expect(r.status).toBe(0)
+    expect(r.stdout).toBe('added 1: via flag\n')
+    expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'via flag', done: false }])
+  })
+
+  it('reads only pluglet.profile.json as the default profile', () => {
+    ws.file('pluglet.json', '{}\n')
+    const r = pluglet(ws.root, 'list')
+    expect(r.status).toBe(1)
+    expect(r.stderr).toMatch(/pluglet\.profile\.json does not exist; pass --profile <file>/)
+    expect(existsSync(join(ws.root, 'tasks.json')), 'no run may have touched the store').toBe(false)
+  })
+
+  it('rejects an unknown option with exit 2 in any position, before any profile or store is read', () => {
+    const other = ws.file('other.json', '{}\n')
+    const expectUsage = (...args: string[]) => {
+      const r = pluglet(ws.root, ...args)
+      expect(r.status, args.join(' ')).toBe(2)
+      expect(r.stdout, args.join(' ')).toBe('')
+      expect(r.stderr, args.join(' ')).toBe('pluglet: unknown option "--config"; the only option is --profile <file>\n')
+    }
+    expectUsage('--config', other, 'list')
+    ws.config({})
+    expectUsage('--config', other, 'list')
+    expectUsage('list', '--config', other)
+    expectUsage('add', '--config', other, 'buy', 'milk')
+    expect(existsSync(join(ws.root, 'tasks.json')), 'no run may have touched the store').toBe(false)
+  })
+  it('done marks a task on disk and list shows [x]; repeat and unknown id behave as documented', () => {
+    ws.config({})
+    expect(pluglet(ws.root, 'add', 'ship', 'it').status).toBe(0)
+    const done = pluglet(ws.root, 'done', '1')
+    expect(done.status).toBe(0)
+    expect(done.stdout).toBe('done 1: ship it\n')
+    expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'ship it', done: true }])
+    expect(pluglet(ws.root, 'list').stdout).toBe('1 [x] ship it\n')
+    const before = readFileSync(join(ws.root, 'tasks.json'))
+    const again = pluglet(ws.root, 'done', '1')
+    expect(again.status).toBe(0)
+    expect(again.stdout).toBe('already done 1: ship it\n')
+    expect(readFileSync(join(ws.root, 'tasks.json')).equals(before)).toBe(true)
+    const unknown = pluglet(ws.root, 'done', '42')
+    expect(unknown.status).toBe(1)
+    expect(unknown.stdout).toBe('')
+    expect(unknown.stderr).toMatch(/no task with id 42/)
+    const usage = pluglet(ws.root, 'done', 'abc')
+    expect(usage.status).toBe(2)
+    expect(usage.stderr).toMatch(/usage: done <id>/)
+  })
+
   it('loads a plugin from config through the real loader', () => {
     ws.file('shout.mjs', SHOUT_PLUGIN)
     ws.config({ plugins: ['./shout.mjs'] })

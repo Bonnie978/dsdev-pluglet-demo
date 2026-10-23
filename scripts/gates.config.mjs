@@ -2,7 +2,7 @@
  * Gate inventory and aggregate graphs for `scripts/run-gates.mjs`.
  * Each gate: id, label, command, args, needs (gate ids that must pass first),
  * quick (part of the build-free doc-quick aggregate), allowFailure (observational).
- * Language-specific gates (typecheck, export-jsdoc, unit tests) are registered below and named in `hygiene` and `check-all`.
+ * Add language-specific gates (typecheck, lint, tests) below and name them in aggregates.
  */
 const node = (script, ...args) => ({ command: 'node', args: [`scripts/${script}.mjs`, ...args] })
 
@@ -13,6 +13,9 @@ export const gates = [
   { id: 'agent-note-format', label: 'verify-agent-note-format', ...node('verify-agent-note-format'), quick: true },
   { id: 'postmortems', label: 'verify-postmortems', ...node('verify-postmortems'), quick: true },
   { id: 'upgrade-guides', label: 'verify-upgrade-guides', ...node('verify-upgrade-guides'), quick: true },
+  { id: 'archived-agent-notes', label: 'verify-archived-agent-notes', ...node('verify-archived-agent-notes'), quick: true },
+  { id: 'repository-references', label: 'verify-repository-references', ...node('verify-repository-references'), quick: true },
+  { id: 'gate-selftest', label: 'gate self-tests (node --test scripts/*.spec.mjs)', command: 'node', args: ['--test', 'scripts/*.spec.mjs'] },
   { id: 'lockfile', label: 'verify-lockfile', ...node('verify-lockfile') },
   { id: 'typecheck', label: 'typecheck', command: 'pnpm', args: ['run', '--silent', 'typecheck'] },
   { id: 'export-jsdoc', label: 'verify-export-jsdoc', ...node('verify-export-jsdoc'), quick: true },
@@ -24,6 +27,6 @@ const quick = gates.filter(g => g.quick).map(g => g.id)
 export const aggregates = {
   'doc-quick': quick,
   'doc-sync': [...quick],
-  'hygiene': ['lockfile', 'typecheck', 'export-jsdoc'],
+  'hygiene': ['lockfile', 'gate-selftest', 'typecheck', 'export-jsdoc'],
   'check-all': gates.map(g => g.id),
 }

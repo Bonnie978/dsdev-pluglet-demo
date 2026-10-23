@@ -13,33 +13,39 @@ import { TaskStore } from './store.ts'
 
 /** Parsed argv; defaulting is an explicit `resolve` step, never hidden in `run()`. */
 export interface Invocation {
+  /** Path of the profile (config) file, as given to `--profile` or the default `pluglet.profile.json`. */
   readonly configPath: string
   readonly command: string
   readonly args: readonly string[]
 }
 
 /**
- * Parse `pluglet [--config <file>] <command> [args...]`.
+ * Parse `pluglet [--profile <file>] <command> [args...]`. `--profile` is the only option;
+ * any other token starting with `--`, in any position, is a usage error, so an unsupported
+ * option never reaches a command as an argument.
  * @param argv - Arguments after the program name.
- * @returns The invocation with `--config` defaulted to `pluglet.json` when absent.
- * @throws PlugletError('usage') when `--config` lacks a value or no command is given.
+ * @returns The invocation with `--profile` defaulted to `pluglet.profile.json` when absent.
+ * @throws PlugletError('usage') when `--profile` lacks a value, when a token other than
+ *   `--profile` starts with `--`, or when no command is given.
  */
 export function parseArgv(argv: readonly string[]): Invocation {
-  let configPath = 'pluglet.json'
+  let configPath = 'pluglet.profile.json'
   const rest: string[] = []
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!
-    if (arg === '--config') {
+    if (arg === '--profile') {
       const value = argv[i + 1]
-      if (value === undefined) throw new PlugletError('usage', '--config requires a file path')
+      if (value === undefined) throw new PlugletError('usage', '--profile requires a file path')
       configPath = value
       i++
+    } else if (arg.startsWith('--')) {
+      throw new PlugletError('usage', `unknown option "${arg}"; the only option is --profile <file>`)
     } else {
       rest.push(arg)
     }
   }
   const [command, ...args] = rest
-  if (command === undefined) throw new PlugletError('usage', 'usage: pluglet [--config <file>] <command> [args...]')
+  if (command === undefined) throw new PlugletError('usage', 'usage: pluglet [--profile <file>] <command> [args...]')
   return { configPath, command, args }
 }
 
@@ -89,6 +95,7 @@ export function exitCodeFor(result: RunResult): number {
     case 'plugin-invalid':
     case 'duplicate-registration':
     case 'unknown-command':
+    case 'unknown-task':
       return 1
     default:
       return assertNever(result.error.kind)

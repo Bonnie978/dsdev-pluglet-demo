@@ -5,9 +5,9 @@
  */
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { markdownFiles, markdownLines, readText, repoRoot } from './lib/repo-files.mjs'
+import { markdownFiles, markdownLines, readText, resolveRoot } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const LINK = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
 
 const broken = []

@@ -8,7 +8,7 @@ pluglet is a small repository whose changes are made mostly by agents. Without w
 
 ## Decision
 
-pluglet uses the dsdev method as installed by `dsdev-bootstrap`: a root `AGENTS.md` (with `CLAUDE.md` symlinked to it) carries standing orders with links to their homes; `docs/AGENTS.md` fixes the tier taxonomy; decisions live in `.agents/notes/{lifecycle}/{class}/`; escaped bugs get a postmortem under `docs/postmortem/`; review-enforced rules live in `docs/defensive-patterns/`; `scripts/run-gates.mjs` runs the `doc-quick`, `doc-sync`, `hygiene` and `check-all` aggregates; git hooks stay narrow (staged whitespace and Markdown wrap on commit, typecheck on push). Skills are symlinked into `.claude/skills/` from the shared skill set so edits propagate.
+pluglet uses the dsdev method as installed by `dsdev-bootstrap`: a root `AGENTS.md` (with `CLAUDE.md` symlinked to it) carries standing orders with links to their homes; `docs/AGENTS.md` fixes the tier taxonomy; decisions live in `.agents/notes/{lifecycle}/{class}/`; escaped bugs get a postmortem under `docs/postmortem/`; review-enforced rules live in `docs/defensive-patterns/`; `scripts/run-gates.mjs` runs the `doc-quick`, `doc-sync`, `hygiene` and `check-all` aggregates; git hooks stay narrow (staged whitespace and Markdown wrap on commit, typecheck on push). Skills are copied into `.claude/skills/` and committed with the code (version in `.claude/skills/VERSION`); upgrading replaces the whole set in one PR.
 
 ## Alternatives considered
 

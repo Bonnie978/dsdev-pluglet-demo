@@ -53,6 +53,25 @@ export class TaskStore {
   }
 
   /**
+   * Mark a task done and publish the file. Completing a task that is already done is a
+   * no-op: the file is not rewritten and `changed` is `false`.
+   * @param id - Id of an existing task.
+   * @returns The task as stored after the call, and whether this call changed it.
+   * @throws PlugletError('unknown-task') when no task has that id; the file is untouched.
+   */
+  complete(id: number): { task: Task; changed: boolean } {
+    const tasks = this.list()
+    const current = tasks.find(t => t.id === id)
+    if (current === undefined) {
+      throw new PlugletError('unknown-task', `no task with id ${id}; run "list" to see task ids`)
+    }
+    if (current.done) return { task: current, changed: false }
+    const task: Task = { ...current, done: true }
+    this.publish(tasks.map(t => (t === current ? task : t)))
+    return { task, changed: true }
+  }
+
+  /**
    * Replace the whole task list atomically.
    * @param tasks - The complete new state.
    */

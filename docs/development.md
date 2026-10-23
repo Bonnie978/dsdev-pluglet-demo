@@ -30,7 +30,9 @@ DSDEV_SNAPSHOT=refresh pnpm test tests/expected   # 有意刷新期望输出，�
 
 ## CI gate
 
-`scripts/run-gates.mjs <aggregate>` 按依赖图运行聚合：`doc-quick`（无需构建的文档检查）、`doc-sync`（全部文档检查）、`hygiene`、`check-all`。`DSDEV_GATE_CONCURRENCY` 控并发；`DSDEV_GATE_FAIL_FAST=1` 首个阻断失败即停。
+[.github/workflows/dsdev-gates.yml](../.github/workflows/dsdev-gates.yml) 在每个 PR 上跑 `doc-quick`、`hygiene`、`check-all` 三个聚合；本地只跑与变更面相关的检查。
+
+`scripts/run-gates.mjs <aggregate>` 按依赖图运行聚合：`doc-quick`（无需构建的文档检查）、`doc-sync`（全部文档检查）、`hygiene`（lockfile 一致性、gate 自测 `node --test 'scripts/*.spec.mjs'`、typecheck、export-jsdoc）、`check-all`。每个 `scripts/verify-*.mjs` 旁有同名 `*.spec.mjs`，用临时 fixture 驱动真实 runner 固化它拒绝的案例。`DSDEV_GATE_CONCURRENCY` 控并发；`DSDEV_GATE_FAIL_FAST=1` 首个阻断失败即停。
 
 ## TODO 标记
 

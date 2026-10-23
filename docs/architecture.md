@@ -15,7 +15,7 @@
 | `src/config.ts` | 配置文件读取与验证；路径绝对化 | `loadConfig()` |
 | `src/store.ts` | 任务 JSON 文件；原子发布 | `TaskStore` |
 | `src/plugins.ts` | 插件模块规范化与加载；半应用树的回滚 | `loadPlugins()`、`unwrapPlugin()` |
-| `src/commands.ts` | 核心命令 `list`/`add`/`help`；命令解析 | `registerCoreCommands()`、`resolveCommand()` |
+| `src/commands.ts` | 核心命令 `list`/`add`/`done`/`help`；命令解析 | `registerCoreCommands()`、`resolveCommand()` |
 | `src/cli.ts` | argv 解析、运行循环、退出码映射 | `runCli()`、`parseArgv()`、`exitCodeFor()` |
 | `src/bin.ts` | 进程入口，无逻辑 | `lib/bin.js` |
 
@@ -30,7 +30,7 @@ argv
   registerCoreCommands
   loadPlugins          每个插件: import → unwrapPlugin → apply(ctx)；任一失败则逆序释放已应用的插件
   resolveCommand       unknown-command → exit 1
-  command.run(args)    返回要打印的行
+  command.run(args)    返回要打印的行；usage → exit 2，unknown-task → exit 1
   finally: disposePlugins(); disposeCore()
 ```
 
@@ -43,4 +43,4 @@ argv
 
 ## 新行为放哪
 
-新命令写成插件；核心只保留 `list`/`add`/`help`。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。
+核心只保留任务生命周期的基本动作 `list`/`add`/`done`/`help`（`done` 进核心的理由见 [Agent Note](../.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)）；其他新命令写成插件。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。

@@ -5,13 +5,39 @@
 import { readdirSync, realpathSync, statSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 
-/** Directory names never descended into. */
-export const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'lib', 'build', 'coverage', '.generated', '.cache', 'vendor', '.venv', '__pycache__'])
+/** Directory names never descended into, at any depth. */
+export const SKIP_DIRS = new Set(['.git', 'node_modules', 'coverage', '.generated', '.cache', 'vendor', '.venv', 'venv', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.tox', 'target'])
+/** Build outputs skipped only at the repository root; a nested `src/lib/` is source and is checked. */
+export const ROOT_BUILD_DIRS = new Set(['dist', 'lib', 'build'])
 
 /** Resolve the repository root from a script location (`scripts/` or `scripts/lib/`). */
 export function repoRoot(importMetaUrl) {
   const here = new URL('.', importMetaUrl).pathname
   return here.endsWith(`${sep}lib${sep}`) || here.endsWith('/lib/') ? resolve(here, '../..') : resolve(here, '..')
+}
+
+/**
+ * The root a gate checks: `--root <dir>` from argv when present (read-only, used by the
+ * gates' own tests to drive the real runner over a temporary fixture), else the repository.
+ * A missing `--root` directory exits 2 so a typo never passes as "nothing to check".
+ */
+export function resolveRoot(importMetaUrl, argv = process.argv.slice(2)) {
+  const i = argv.indexOf('--root')
+  if (i === -1) return repoRoot(importMetaUrl)
+  const dir = argv[i + 1]
+  if (!dir) { console.error('--root requires a directory'); process.exit(2) }
+  const abs = resolve(dir)
+  try { if (!statSync(abs).isDirectory()) throw new Error() } catch { console.error(`--root ${dir} is not a directory`); process.exit(2) }
+  return abs
+}
+
+/** Word count: whitespace tokens plus one per CJK character, so Chinese and English prose spend budgets alike. */
+const CJK = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u30FF\uAC00-\uD7AF]/g
+export function countWords(text) {
+  return text.split(/\s+/).filter(Boolean).reduce((n, token) => {
+    const cjk = token.match(CJK)?.length ?? 0
+    return n + cjk + (token.replace(CJK, '').trim() === '' ? 0 : 1)
+  }, 0)
 }
 
 /** Is this repository-relative path inside the frozen Agent Note archive? */
@@ -34,6 +60,9 @@ export function walk(root, predicate, { includeArchived = false } = {}) {
       const rel = relative(root, abs).split(sep).join('/')
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue
+        if (dir === root && ROOT_BUILD_DIRS.has(entry.name)) continue
+        // Skill templates are scaffolding copied into other repositories; their links resolve there, not here.
+        if (/^(\.claude|\.agents)\/skills\/[^/]+\/templates$/.test(rel)) continue
         if (!includeArchived && rel === '.agents/notes/archived') continue
         visit(abs)
         continue

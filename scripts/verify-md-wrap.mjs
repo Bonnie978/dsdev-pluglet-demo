@@ -3,10 +3,11 @@
  * (`docs/AGENTS.md` § 写作规则: one physical line per paragraph; use editor soft-wrap).
  * Fenced code, tables, headings, HTML blocks, link definitions, and indented code are
  * structural and exempt. The frozen Agent Note archive and vendored trees are skipped.
+ * With file arguments only those files are checked.
  */
-import { markdownFiles, markdownLines, readText, repoRoot } from './lib/repo-files.mjs'
+import { markdownFiles, markdownLines, readText, resolveRoot } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const STRUCTURAL = /^(\s{0,3}#{1,6}\s|\s{0,3}>|\s*\||\s{0,3}<|\s{0,3}:::|\s{0,3}(-{3,}|={3,}|\*{3,}|_{3,})\s*$|\s{0,3}\[[^\]]+\]:|\s{4,}|\t)/
 const LIST_ITEM = /^\s{0,3}([-*+]|\d{1,9}[.)])\s+/
 
@@ -14,8 +15,11 @@ function isProse(line) {
   return line.trim() !== '' && !STRUCTURAL.test(line)
 }
 
+// Positional arguments restrict the check to those files (the pre-commit hook passes staged .md files).
+const argFiles = process.argv.slice(2).filter((a, i, all) => a !== '--root' && all[i - 1] !== '--root')
+const files = argFiles.length > 0 ? argFiles.map(f => f.replace(/^\.\//, '')) : markdownFiles(root)
 const violations = []
-for (const rel of markdownFiles(root)) {
+for (const rel of files) {
   const { lines, fenced } = markdownLines(readText(root, rel))
   let inFrontmatter = lines[0] === '---'
   let prev = null // { index, kind: 'prose' | 'item' }

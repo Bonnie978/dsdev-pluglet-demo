@@ -27,7 +27,7 @@ const KNOWN_KEYS = new Set(['store', 'plugins'])
  */
 export function loadConfig(path: string): Config {
   const abs = resolve(path)
-  if (!existsSync(abs)) throw new PlugletError('config-missing', `config file ${abs} does not exist; pass --config <file>`)
+  if (!existsSync(abs)) throw new PlugletError('config-missing', `config file ${abs} does not exist; pass --profile <file>`)
   let raw: unknown
   try {
     raw = JSON.parse(readFileSync(abs, 'utf8'))

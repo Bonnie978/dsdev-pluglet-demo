@@ -11,6 +11,7 @@ export type PlugletErrorKind =
   | 'plugin-invalid'
   | 'duplicate-registration'
   | 'unknown-command'
+  | 'unknown-task'
   | 'usage'
 
 /**
