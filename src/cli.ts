@@ -21,10 +21,12 @@ export interface Invocation {
 
 /**
  * Parse `pluglet [--profile <file>] <command> [args...]`. `--profile` is the only option;
- * every other `--word` is an ordinary argument (there is no alias for the 0.1.0 `--config`).
+ * any other token starting with `--`, in any position, is a usage error, so an unsupported
+ * option never reaches a command as an argument.
  * @param argv - Arguments after the program name.
  * @returns The invocation with `--profile` defaulted to `pluglet.profile.json` when absent.
- * @throws PlugletError('usage') when `--profile` lacks a value or no command is given.
+ * @throws PlugletError('usage') when `--profile` lacks a value, when a token other than
+ *   `--profile` starts with `--`, or when no command is given.
  */
 export function parseArgv(argv: readonly string[]): Invocation {
   let configPath = 'pluglet.profile.json'
@@ -36,6 +38,8 @@ export function parseArgv(argv: readonly string[]): Invocation {
       if (value === undefined) throw new PlugletError('usage', '--profile requires a file path')
       configPath = value
       i++
+    } else if (arg.startsWith('--')) {
+      throw new PlugletError('usage', `unknown option "${arg}"; the only option is --profile <file>`)
     } else {
       rest.push(arg)
     }

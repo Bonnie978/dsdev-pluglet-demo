@@ -39,13 +39,27 @@ describe('pluglet bin', () => {
     expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'via flag', done: false }])
   })
 
-  it('ignores the 0.1.0 default file name and the former --config flag', () => {
+  it('reads only pluglet.profile.json as the default profile', () => {
     ws.file('pluglet.json', '{}\n')
-    const byDefault = pluglet(ws.root, 'list')
-    expect(byDefault.status).toBe(1)
-    expect(byDefault.stderr).toMatch(/pluglet\.profile\.json does not exist; pass --profile <file>/)
-    const byOldFlag = pluglet(ws.root, '--config', 'pluglet.json', 'list')
-    expect(byOldFlag.status).toBe(1)
+    const r = pluglet(ws.root, 'list')
+    expect(r.status).toBe(1)
+    expect(r.stderr).toMatch(/pluglet\.profile\.json does not exist; pass --profile <file>/)
+    expect(existsSync(join(ws.root, 'tasks.json')), 'no run may have touched the store').toBe(false)
+  })
+
+  it('rejects an unknown option with exit 2 in any position, before any profile or store is read', () => {
+    const other = ws.file('other.json', '{}\n')
+    const expectUsage = (...args: string[]) => {
+      const r = pluglet(ws.root, ...args)
+      expect(r.status, args.join(' ')).toBe(2)
+      expect(r.stdout, args.join(' ')).toBe('')
+      expect(r.stderr, args.join(' ')).toBe('pluglet: unknown option "--config"; the only option is --profile <file>\n')
+    }
+    expectUsage('--config', other, 'list')
+    ws.config({})
+    expectUsage('--config', other, 'list')
+    expectUsage('list', '--config', other)
+    expectUsage('add', '--config', other, 'buy', 'milk')
     expect(existsSync(join(ws.root, 'tasks.json')), 'no run may have touched the store').toBe(false)
   })
 

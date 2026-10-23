@@ -12,8 +12,17 @@ describe('parseArgv', () => {
     expect(parseArgv(['list', '--profile', 'c.json'])).toMatchObject({ configPath: 'c.json', command: 'list' })
   })
 
-  it('has no alias for the former --config flag: it is an ordinary word, not an option', () => {
-    expect(parseArgv(['--config', 'c.json', 'list'])).toEqual({ configPath: 'pluglet.profile.json', command: '--config', args: ['c.json', 'list'] })
+  it('rejects any option other than --profile as a usage error, in any position', () => {
+    const unknown = (argv: string[]) => {
+      try { parseArgv(argv) } catch (error) { return error }
+      throw new Error(`parseArgv(${JSON.stringify(argv)}) did not throw`)
+    }
+    for (const argv of [['--config', 'c.json', 'list'], ['list', '--config', 'c.json'], ['add', '--config', 'c.json', 'buy']]) {
+      expect(unknown(argv), argv.join(' ')).toMatchObject({ kind: 'usage', message: 'unknown option "--config"; the only option is --profile <file>' })
+    }
+    expect(unknown(['--profile=c.json', 'list'])).toMatchObject({ kind: 'usage', message: 'unknown option "--profile=c.json"; the only option is --profile <file>' })
+    expect(unknown(['add', '--'])).toMatchObject({ kind: 'usage', message: 'unknown option "--"; the only option is --profile <file>' })
+    expect(parseArgv(['add', '-x', 'a-b'])).toEqual({ configPath: 'pluglet.profile.json', command: 'add', args: ['-x', 'a-b'] })
   })
 
   it('reports usage failures', () => {
