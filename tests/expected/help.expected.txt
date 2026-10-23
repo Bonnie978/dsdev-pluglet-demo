@@ -1,0 +1,3 @@
+list  Print every task as "<id> [x] <title>".
+add  Add a task: add <title words...>.
+help  List commands.

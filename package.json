@@ -1,0 +1,47 @@
+{
+  "name": "pluglet",
+  "version": "0.1.0",
+  "description": "A tiny plugin-based task CLI used to exercise the dsdev development method.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "pluglet": "lib/bin.js"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "node scripts/verify-export-jsdoc.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm run build && vitest run --config vitest.e2e.config.ts",
+    "test:expected": "vitest run tests/expected",
+    "change-scope": "node scripts/change-scope.mjs",
+    "doc-sync": "node scripts/run-gates.mjs doc-sync",
+    "test:docs": "node scripts/run-gates.mjs doc-quick",
+    "hygiene": "node scripts/run-gates.mjs hygiene",
+    "check:all": "node scripts/run-gates.mjs check-all",
+    "verify-agent-note-format": "node scripts/verify-agent-note-format.mjs",
+    "verify-doc-budgets": "node scripts/verify-doc-budgets.mjs",
+    "verify-md-wrap": "node scripts/verify-md-wrap.mjs",
+    "verify-md-links": "node scripts/verify-md-links.mjs",
+    "verify-postmortems": "node scripts/verify-postmortems.mjs",
+    "verify-upgrade-guides": "node scripts/verify-upgrade-guides.mjs",
+    "verify-export-jsdoc": "node scripts/verify-export-jsdoc.mjs",
+    "postinstall": "node scripts/install-hooks.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^3.2.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
