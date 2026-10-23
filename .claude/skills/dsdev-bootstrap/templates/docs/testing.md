@@ -20,7 +20,7 @@
 - Coverage gate：无（<原因>）
 - 真实入口 e2e：无（<原因>）
 - 期望输出：无（<原因>）
-- gate 自测：`scripts/verify-postmortems.test.mjs`
+- gate 自测：`scripts/verify-postmortems.spec.mjs`
 
 ## 四原则
 

@@ -1,7 +1,7 @@
 /**
  * Enforce upgrade-guide layout: `docs/upgrade-guide/v<version>/<item>/guide.md` with
  * `kind: upgrade-guide` frontmatter, `## Change` + `## Migration` sections, and at most
- * MAX_WORDS words; an item directory holds only guide files (no index, no attachments).
+ * MAX_WORDS words (600, CJK-aware); an item directory holds only guide files (no index, no attachments).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -11,8 +11,10 @@ const root = resolveRoot(import.meta.url)
 const base = resolve(root, 'docs/upgrade-guide')
 if (!existsSync(base)) { console.log('verify-upgrade-guides: no docs/upgrade-guide; nothing to check.'); process.exit(0) }
 
-/** A guide states one break and its migration; longer text belongs in docs or an Agent Note. */
-const MAX_WORDS = 500
+/** A guide states one break and its migration; longer text belongs in docs or an Agent Note.
+ * DeepSeek Harness caps guides at 500 `wc -w` words; the CJK-aware count here runs higher for
+ * Chinese prose, so the ceiling is 600. */
+const MAX_WORDS = 600
 const errors = []
 let count = 0
 for (const version of readdirSync(base).filter(v => statSync(join(base, v)).isDirectory())) {

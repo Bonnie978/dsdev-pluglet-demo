@@ -27,8 +27,8 @@ templates/docs/cookbook/README.md       → docs/cookbook/README.md
 templates/docs/upgrade-guide/.gitkeep   → docs/upgrade-guide/
 templates/notes/.                       → .agents/notes/（README.md、AGENTS.md、implemented/AGENTS.md、archived/AGENTS.md 与六个 class 目录；用 `cp -R templates/notes/. .agents/notes/` 才会带上 .gitkeep）
 templates/github/*                      → .github/（pull_request_template.md、ISSUE_TEMPLATE/）
-templates/scripts/*                     → scripts/（gate 脚本、每个 gate 的 `*.test.mjs` 自测、gates.config.mjs、doc-budgets.manifest.json、install-hooks.mjs）
-                                          自测与脚本同住 scripts/（像 DS 的 scripts/*.spec.ts），由 `gate-selftest` gate 用 `node --test 'scripts/*.test.mjs'` 运行，零依赖，不进你的业务测试目录
+templates/scripts/*                     → scripts/（gate 脚本、每个 gate 的 `*.spec.mjs` 自测、gates.config.mjs、doc-budgets.manifest.json、install-hooks.mjs）
+                                          自测与脚本同住 scripts/（像 DS 的 scripts/*.spec.ts），由 `gate-selftest` gate 用 `node --test 'scripts/*.spec.mjs'` 运行，零依赖，不进你的业务测试目录
 ```
 
 模板里的 `{{PROJECT}}`、`{{PKG_MANAGER}}`、`{{TEST_CMD}}`、`{{TYPECHECK_CMD}}`、`{{LINT_CMD}}` 全部替换；找不到对应命令的占位符删掉整行，不留空命令。
@@ -99,7 +99,7 @@ install-hooks: ; node scripts/install-hooks.mjs
 node scripts/run-gates.mjs doc-quick          # 应全绿
 ```
 
-`node --test 'scripts/*.test.mjs'`（或 `hygiene` 聚合里的 `gate-selftest`）运行每个 gate 的自测。然后再逐个制造无效案例并观察变红：给一个 Agent Note 改坏第三行；在 docs/ 里写一个两行的段落；加一个指向不存在文件的链接；把 AGENTS.md 预算改成 10。每个都要看到脚本命名了那个案例，再还原。把观察到的命令与输出写进 PR 的 Testing/Proof。
+`node --test 'scripts/*.spec.mjs'`（或 `hygiene` 聚合里的 `gate-selftest`）运行每个 gate 的自测。然后再逐个制造无效案例并观察变红：给一个 Agent Note 改坏第三行；在 docs/ 里写一个两行的段落；加一个指向不存在文件的链接；把 AGENTS.md 预算改成 10。每个都要看到脚本命名了那个案例，再还原。把观察到的命令与输出写进 PR 的 Testing/Proof。
 
 安装钩子：`node scripts/install-hooks.mjs`（postinstall 只在新 checkout 触发，已有 node_modules 时包管理器会跳过它），然后故意提交一个尾随空白确认 pre-commit 拒绝。
 

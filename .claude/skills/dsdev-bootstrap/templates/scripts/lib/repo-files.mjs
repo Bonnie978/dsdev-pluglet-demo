@@ -58,6 +58,8 @@ export function walk(root, predicate, { includeArchived = false } = {}) {
       const rel = relative(root, abs).split(sep).join('/')
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue
+        // Skill templates are scaffolding copied into other repositories; their links resolve there, not here.
+        if (/^(\.claude|\.agents)\/skills\/[^/]+\/templates$/.test(rel)) continue
         if (!includeArchived && rel === '.agents/notes/archived') continue
         visit(abs)
         continue

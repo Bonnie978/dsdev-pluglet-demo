@@ -23,7 +23,7 @@
 
 ## CI gate
 
-`scripts/run-gates.mjs <aggregate>` 按依赖图运行聚合：`doc-quick`（无需构建的文档检查）、`doc-sync`（全部文档检查）、`hygiene`（lockfile 一致性与 gate 自测 `node --test 'scripts/*.test.mjs'`）、`check-all`。每个 `scripts/verify-*.mjs` 旁有同名 `*.test.mjs`，用临时 fixture 驱动真实 runner 固化它拒绝的案例。`DSDEV_GATE_CONCURRENCY` 控并发；`DSDEV_GATE_FAIL_FAST=1` 首个阻断失败即停。
+`scripts/run-gates.mjs <aggregate>` 按依赖图运行聚合：`doc-quick`（无需构建的文档检查）、`doc-sync`（全部文档检查）、`hygiene`（lockfile 一致性与 gate 自测 `node --test 'scripts/*.spec.mjs'`）、`check-all`。每个 `scripts/verify-*.mjs` 旁有同名 `*.spec.mjs`，用临时 fixture 驱动真实 runner 固化它拒绝的案例。`DSDEV_GATE_CONCURRENCY` 控并发；`DSDEV_GATE_FAIL_FAST=1` 首个阻断失败即停。
 
 ## TODO 标记
 
