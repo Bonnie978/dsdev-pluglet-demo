@@ -23,6 +23,23 @@ describe('unwrapPlugin', () => {
       expect((caught as PlugletError).kind).toBe('plugin-invalid')
     }
   })
+
+  it('rejects a non-object default export instead of probing its inherited properties', () => {
+    // `function apply() {}` has `.name === 'apply'` and `Function.prototype.apply`; without a
+    // category check it passes as a plugin named "apply" whose apply is Function.prototype.apply.
+    for (const [bad, type] of [
+      [{ name: 'tag', default: function apply() {} }, 'function'],
+      [{ default: 'tag' }, 'string'],
+      [{ default: 42 }, 'number'],
+    ] as const) {
+      let caught: unknown
+      try { unwrapPlugin(bad, '/plugins/tag.mjs') } catch (error) { caught = error }
+      expect(caught).toBeInstanceOf(PlugletError)
+      expect((caught as PlugletError).kind).toBe('plugin-invalid')
+      expect((caught as PlugletError).message).toContain('/plugins/tag.mjs')
+      expect((caught as PlugletError).message).toContain(`default export is a ${type}`)
+    }
+  })
 })
 
 describe('loadPlugins', () => {
