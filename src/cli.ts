@@ -89,6 +89,7 @@ export function exitCodeFor(result: RunResult): number {
     case 'plugin-invalid':
     case 'duplicate-registration':
     case 'unknown-command':
+    case 'unknown-task':
       return 1
     default:
       return assertNever(result.error.kind)
