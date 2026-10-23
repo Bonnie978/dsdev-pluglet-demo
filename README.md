@@ -15,7 +15,7 @@ node lib/bin.js --profile ./pluglet.profile.json list
 node lib/bin.js --profile ./pluglet.profile.json help
 ```
 
-`--profile <file>` 指定配置文件（profile）；省略时读当前目录的 `pluglet.profile.json`。文件不存在时以 `config-missing` 退出 1。`--profile` 是唯一的选项：任何其他以 `--` 开头的参数，无论位置，都是用法错误并以退出 2 失败，不会传给命令。配置文件内容（相对路径相对配置文件所在目录解析）：
+`--profile <file>` 指定配置文件；省略时读当前目录的 `pluglet.profile.json`。文件不存在时以 `config-missing` 退出 1。`--profile` 是唯一的选项：任何其他以 `--` 开头的参数，无论位置，都是用法错误并以退出 2 失败，不会传给命令。配置文件内容（相对路径相对配置文件所在目录解析）：
 
 ```json
 { "store": "tasks.json", "plugins": ["./plugins/shout.mjs"] }

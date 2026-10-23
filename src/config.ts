@@ -20,7 +20,7 @@ export interface Config {
 const KNOWN_KEYS = new Set(['store', 'plugins'])
 
 /**
- * Read and validate a config file (the CLI calls it a profile and selects it with `--profile`).
+ * Read and validate a config file.
  * @param path - Path to the JSON config file; relative paths resolve from the current directory.
  * @returns The validated configuration with every path made absolute relative to the config file.
  * @throws PlugletError with kind `config-missing` or `config-invalid`.
