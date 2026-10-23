@@ -58,6 +58,37 @@ describe('TaskStore', () => {
     expect(readFileSync(store.path).equals(before)).toBe(true)
   })
 
+  it('removes a task; the others keep their ids and a later add does not refill the gap', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.add('one')
+    store.add('two')
+    store.add('three')
+    expect(store.remove(2)).toEqual({ id: 2, title: 'two', done: false })
+    expect(store.list()).toEqual([{ id: 1, title: 'one', done: false }, { id: 3, title: 'three', done: false }])
+    expect(store.add('four').id).toBe(4)
+    // Verify the world: the file holds exactly the published state and no temp file remains.
+    expect(JSON.parse(readFileSync(store.path, 'utf8')).map((t: { id: number }) => t.id)).toEqual([1, 3, 4])
+    expect(existsSync(`${store.path}.tmp`)).toBe(false)
+  })
+
+  it('removes from a published array without reordering the remaining tasks', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.publish([{ id: 3, title: 'c', done: false }, { id: 1, title: 'a', done: true }, { id: 2, title: 'b', done: false }])
+    expect(store.remove(1)).toEqual({ id: 1, title: 'a', done: true })
+    expect(store.list().map(t => t.id)).toEqual([3, 2])
+  })
+
+  it('rejects removing an unknown id as unknown-task without touching the file', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.add('one')
+    const before = readFileSync(store.path)
+    let caught: unknown
+    try { store.remove(7) } catch (error) { caught = error }
+    expect(caught).toBeInstanceOf(PlugletError)
+    expect((caught as PlugletError).kind).toBe('unknown-task')
+    expect(readFileSync(store.path).equals(before)).toBe(true)
+  })
+
   it('fails loud on a corrupt or non-array store file', () => {
     expect(() => new TaskStore(ws.file('bad.json', '{')).list()).toThrow(PlugletError)
     expect(() => new TaskStore(ws.file('obj.json', '{}')).list()).toThrow(PlugletError)

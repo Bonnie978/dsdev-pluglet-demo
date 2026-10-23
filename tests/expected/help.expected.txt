@@ -1,4 +1,5 @@
 list  Print every task as "<id> [x] <title>".
 add  Add a task: add <title words...>.
 done  Mark a task done: done <id>. Already-done tasks are reported, not failed.
+remove  Delete a task: remove <id>. Remaining tasks keep their ids.
 help  List commands.

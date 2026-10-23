@@ -4,7 +4,7 @@
 
 ## Summary
 
-你可以用 `pluglet add <title>` 记任务、`pluglet done <id>` 标记完成、`pluglet list` 看任务，并通过配置文件挂载插件来增加命令。配置错误、插件错误、重复注册都在启动时以带 `kind` 的结构化错误大声失败，退出码区分用法错误（2）与其他已处理失败（1）。任务存在一个 JSON 文件里，写入是原子的。
+你可以用 `pluglet add <title>` 记任务、`pluglet done <id>` 标记完成、`pluglet remove <id>` 删除任务、`pluglet list` 看任务，并通过配置文件挂载插件来增加命令。配置错误、插件错误、重复注册都在启动时以带 `kind` 的结构化错误大声失败，退出码区分用法错误（2）与其他已处理失败（1）。任务存在一个 JSON 文件里，写入是原子的。
 
 ## 使用
 
@@ -12,6 +12,7 @@
 pnpm install && pnpm run build
 node lib/bin.js --profile ./pluglet.profile.json add buy milk
 node lib/bin.js --profile ./pluglet.profile.json done 1
+node lib/bin.js --profile ./pluglet.profile.json remove 1
 node lib/bin.js --profile ./pluglet.profile.json list
 node lib/bin.js --profile ./pluglet.profile.json help
 ```
@@ -22,12 +23,13 @@ node lib/bin.js --profile ./pluglet.profile.json help
 |---|---|---|
 | `add <title words...>` | 追加任务，打印 `added <id>: <title>` | 空标题 → `usage`，退出码 2 |
 | `done <id>` | 把任务标为完成，打印 `done <id>: <title>`；任务已完成时打印 `already done <id>: <title>`，不改写文件，退出码 0 | id 不存在 → `unknown-task`，退出码 1；缺少 id、非正整数或多个 id → `usage`，退出码 2 |
-| `list` | 按存储顺序每行 `<id> [x] <title>`，未完成为 `[ ]`。`add` 追加到末尾、id 为已有最大 id 加一，`done` 不改变任务位置，所以只经它们写入的任务按 id 升序；插件经 `ctx.store.publish()` 写入的顺序原样保留 | — |
+| `remove <id>` | 从存储中删除任务，打印 `removed <id>: <title>`；其余任务保持原 id 与顺序，留下的 id 空位不会被后续 `add` 填补 | id 不存在 → `unknown-task`，退出码 1，文件不改写；缺少 id、非正整数或多个 id → `usage`，退出码 2 |
+| `list` | 按存储顺序每行 `<id> [x] <title>`，未完成为 `[ ]`。`add` 追加到末尾、id 为已有最大 id 加一，`done` 与 `remove` 不改变其余任务的位置，所以只经它们写入的任务按 id 升序；插件经 `ctx.store.publish()` 写入的顺序原样保留 | — |
 | `help` | 按注册顺序列出命令与描述 | — |
 
 `list` 的顺序由 [tests/store.spec.ts](tests/store.spec.ts) 的 insertion order 与 publish order 用例固定。
 
-`done` 的取舍见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)。
+`done` 的取舍见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)；`remove` 对未知 id 失败、不重排 id 的取舍见 [Agent Note](.agents/notes/implemented/feature/2026-10-24-remove-command-semantics.md)。
 
 `--profile <file>` 指定配置文件；省略时读当前目录的 `pluglet.profile.json`。文件不存在时以 `config-missing` 退出 1。`--profile` 是唯一的选项：任何其他以 `--` 开头的参数，无论位置，都是用法错误并以退出 2 失败，不会传给命令。配置文件内容（相对路径相对配置文件所在目录解析）：
 
@@ -56,7 +58,7 @@ export function apply(ctx) {
 
 也可以把同一个 `{ name, apply }` 对象作为默认导出。只接受这两种形状：默认导出是函数（例如 `export default function apply(ctx)`）或其他非对象值时，加载在启动时以 `plugin-invalid` 失败，stderr 指出插件文件、实际类型与两种可接受形状；缺少 `name` 或 `apply` 同样是 `plugin-invalid`。
 
-注册即效果：插件树释放时所有命令被移除。同名命令第二次注册抛 `duplicate-registration`，包括与核心命令 `list`/`add`/`done`/`help` 同名。
+注册即效果：插件树释放时所有命令被移除。同名命令第二次注册抛 `duplicate-registration`，包括与核心命令 `list`/`add`/`done`/`remove`/`help` 同名。
 
 ## 给 LLM Agent 暴露工具
 
@@ -67,9 +69,10 @@ export function apply(ctx) {
 | `pluglet_list` | `pluglet --profile <profile> list` |
 | `pluglet_add` | `pluglet --profile <profile> add <title>` |
 | `pluglet_done` | `pluglet --profile <profile> done <id>` |
+| `pluglet_remove` | `pluglet --profile <profile> remove <id>` |
 | `pluglet_help` | `pluglet --profile <profile> help` |
 
-接入方（MCP server）把一次工具调用翻译成一次 CLI 运行：`title` 作为一个 argv 元素传给 `add`（不按空白拆分，标题原样存储；CLI 把以 `--` 开头的参数当未知选项拒绝，所以 schema 用 `pattern` 排除这种标题），`id` 转成十进制字符串；退出码 0 时 stdout 的行是工具结果，非零时 stderr 的一行是错误。每个工具都有可选参数 `profile`，对应 `--profile`，四处定义完全一致，缺省与 CLI 相同（`pluglet.profile.json`）。清单只覆盖核心命令：插件命令出现在 `pluglet_help` 的结果里，但不能通过这些工具调用。
+接入方（MCP server）把一次工具调用翻译成一次 CLI 运行：`title` 作为一个 argv 元素传给 `add`（不按空白拆分，标题原样存储；CLI 把以 `--` 开头的参数当未知选项拒绝，所以 schema 用 `pattern` 排除这种标题），`id` 转成十进制字符串；退出码 0 时 stdout 的行是工具结果，非零时 stderr 的一行是错误。每个工具都有可选参数 `profile`，对应 `--profile`，每处定义完全一致，缺省与 CLI 相同（`pluglet.profile.json`）。清单只覆盖核心命令：插件命令出现在 `pluglet_help` 的结果里，但不能通过这些工具调用。
 
 `tests/tools.spec.ts` 用 dsdev-agent-experience 的规则校验清单，把工具集与 `profile` 缺省值钉到 `registerCoreCommands` 与 `parseArgv`，并经 `runCli` 真实运行上表的映射核对每条描述的声明；改核心命令或 `--profile` 的缺省值时同一提交更新清单。描述的写法按 [dsdev-agent-experience](.claude/skills/dsdev-agent-experience/SKILL.md)；为什么是静态清单见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-static-tool-manifest-for-agents.md)。
 
@@ -80,3 +83,4 @@ export function apply(ctx) {
 ## Known Limitations and Deferred Work
 
 - **单文件存储不支持并发写入者**：两个进程同时 `add` 会丢失其中一个的任务；原子 rename 只保证文件不撕裂。
+- **id 最大的任务被 `remove` 后，其 id 会被下一次 `add` 重新分配**：`add` 取现有最大 id 加一，存储文件不记录曾经用过的最大 id；中间的空位不会被填补。

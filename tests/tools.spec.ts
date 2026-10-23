@@ -117,6 +117,8 @@ describe('tools/pluglet.tools.json', () => {
     expect(profiles[0]!.default).toBe(parseArgv(['help']).configPath)
     expect(tool('pluglet_done').parameters.required, 'done needs a task id').toEqual(['id'])
     expect(tool('pluglet_done').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1 })
+    expect(tool('pluglet_remove').parameters.required, 'remove needs a task id').toEqual(['id'])
+    expect(tool('pluglet_remove').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1 })
   })
 })
 
@@ -191,8 +193,24 @@ describe('manifest claims against the real CLI', () => {
     expect(unknown.kind === 'error' && unknown.error.kind, 'an id no task has is an error').toBe('unknown-task')
     const help = await call('pluglet_help', profile)
     expect(help, 'one line per command, core and plugin, with name and description').toEqual([
-      ...['list', 'add', 'done', 'help'].map(n => expect.stringMatching(new RegExp(`^${n}  \\S`))),
+      ...['list', 'add', 'done', 'remove', 'help'].map(n => expect.stringMatching(new RegExp(`^${n}  \\S`))),
       'shout  Upper-case the arguments.',
     ])
+  })
+
+  it('remove names the deleted task, keeps the other ids, and fails on an id no task has', async () => {
+    const profile = ws.config({})
+    const store = join(ws.root, 'tasks.json')
+    for (const title of ['one', 'two', 'three']) await call('pluglet_add', profile, title)
+    const removed = await call('pluglet_remove', profile, String(2))
+    expect(removed, 'the result names the id and title of the deleted task').toEqual([expect.stringMatching(/\b2\b.*\btwo\b/)])
+    expect(await call('pluglet_list', profile), 'the other tasks keep their ids').toEqual(['1 [ ] one', '3 [ ] three'])
+    const before = readFileSync(store)
+    const unknown = await runCli(['--profile', profile, 'remove', '2'])
+    expect(unknown.kind === 'error' && unknown.error.kind, 'an id no task has is an error').toBe('unknown-task')
+    expect(readFileSync(store).equals(before), 'nothing is deleted').toBe(true)
+    await call('pluglet_remove', profile, String(3))
+    const added = await call('pluglet_add', profile, 'four')
+    expect(added, 'add assigns one more than the highest id in the list').toEqual([expect.stringMatching(/\b2\b/)])
   })
 })

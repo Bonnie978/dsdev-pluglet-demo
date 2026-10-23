@@ -7,7 +7,11 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { PlugletError } from './errors.ts'
 
-/** One task record. Ids are sequential positive integers assigned by the store. */
+/**
+ * One task record. Ids are positive integers assigned by the store: `add` assigns one more
+ * than the highest id present, and removing a task never renumbers the others, so a gap left
+ * by `remove` is never refilled.
+ */
 export interface Task {
   readonly id: number
   readonly title: string
@@ -26,8 +30,8 @@ export class TaskStore {
 
   /**
    * Read the task file. Tasks are listed in stored order. `add` appends with one above the
-   * highest stored id and `complete` keeps each task in place, so a file written only by them
-   * lists in ascending id order; `publish` stores the array it is given in that order. The
+   * highest stored id, and `complete` and `remove` keep every remaining task in place, so a file
+   * written only by them lists in ascending id order; `publish` stores the array it is given in that order. The
    * insertion-order and publish-order cases in `tests/store.spec.ts` pin this.
    * @returns Every task in stored order; an absent file reads as no tasks.
    */
@@ -44,7 +48,7 @@ export class TaskStore {
   }
 
   /**
-   * Append a task with the next sequential id and publish the file.
+   * Append a task with one above the highest stored id and publish the file.
    * @param title - Non-empty task title.
    * @returns The stored task.
    * @throws PlugletError('usage') for an empty title.
@@ -75,6 +79,22 @@ export class TaskStore {
     const task: Task = { ...current, done: true }
     this.publish(tasks.map(t => (t === current ? task : t)))
     return { task, changed: true }
+  }
+
+  /**
+   * Delete a task and publish the file. The remaining tasks keep their ids and their stored order.
+   * @param id - Id of an existing task.
+   * @returns The removed task.
+   * @throws PlugletError('unknown-task') when no task has that id; the file is untouched.
+   */
+  remove(id: number): Task {
+    const tasks = this.list()
+    const current = tasks.find(t => t.id === id)
+    if (current === undefined) {
+      throw new PlugletError('unknown-task', `no task with id ${id}; run "list" to see task ids`)
+    }
+    this.publish(tasks.filter(t => t !== current))
+    return current
   }
 
   /**

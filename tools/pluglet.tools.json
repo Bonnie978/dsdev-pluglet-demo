@@ -1,5 +1,5 @@
 {
-  "systemPromptSection": "pluglet is the user's task list: a JSON file on disk that the user also reads and writes through the `pluglet` CLI, so what you add or complete is visible to them and what they add is visible to you. Use the pluglet_* tools whenever the user asks to record, review, count or finish their tasks, or asks which pluglet commands their profile offers. There is no tool to edit or delete a task, and a command that pluglet_help reports but these tools do not cover is something the user runs themselves.",
+  "systemPromptSection": "pluglet is the user's task list: a JSON file on disk that the user also reads and writes through the `pluglet` CLI, so what you add, complete or remove is visible to them and what they add is visible to you. Use the pluglet_* tools whenever the user asks to record, review, count, finish or delete their tasks, or asks which pluglet commands their profile offers. There is no tool to edit a task's title or reopen a done task, and a command that pluglet_help reports but these tools do not cover is something the user runs themselves.",
   "tools": [
     {
       "name": "pluglet_list",
@@ -18,7 +18,7 @@
     },
     {
       "name": "pluglet_add",
-      "description": "Append a new open task with the given title; the result states the id assigned to it, the next sequential integer.",
+      "description": "Append a new open task with the given title; the result states the id assigned to it, one more than the highest id in the list.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -48,6 +48,27 @@
             "type": "integer",
             "minimum": 1,
             "description": "Id of the task to complete, as shown by pluglet_list."
+          },
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Use the same value on every call in a conversation so all calls address one task file."
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pluglet_remove",
+      "description": "Delete the task with the given id from the list; the result names the id and title of the deleted task. Deletion cannot be undone, so call it only when the user asks to delete that task. The other tasks keep their ids, so an id read from an earlier pluglet_list still names the same task unless that task was deleted. An id that no task has is an error and nothing is deleted.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Id of the task to delete, as shown by pluglet_list."
           },
           "profile": {
             "type": "string",
