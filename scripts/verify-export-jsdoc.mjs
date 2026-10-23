@@ -6,9 +6,9 @@
  * Re-exports are exempt. Adapt the `SRC` predicate when sources live elsewhere.
  */
 import { readFileSync } from 'node:fs'
-import { repoRoot, walk } from './lib/repo-files.mjs'
+import { resolveRoot, walk } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const SRC = rel => /(^|\/)src\/.*\.(ts|tsx|mts|js|mjs)$/.test(rel) && !/\.(spec|test)\.(ts|js|mjs)$|\.d\.ts$/.test(rel)
 const EXPORT = /^export\s+(?:default\s+)?(?:async\s+)?(function|class|const|let|var|interface|type|enum|abstract class)\s+([A-Za-z_$][\w$]*)?/
 

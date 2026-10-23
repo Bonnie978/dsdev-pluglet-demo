@@ -17,11 +17,9 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, resolve, sep } from 'node:path'
-import { markdownLines, repoRoot } from './lib/repo-files.mjs'
+import { markdownLines, resolveRoot } from './lib/repo-files.mjs'
 
-const rootArg = process.argv.indexOf('--root')
-const root = rootArg === -1 ? repoRoot(import.meta.url) : resolve(process.argv[rootArg + 1] ?? '')
-if (rootArg !== -1 && !existsSync(root)) { console.error(`verify-postmortems: --root ${root} does not exist`); process.exit(2) }
+const root = resolveRoot(import.meta.url)
 const dir = resolve(root, 'docs/postmortem')
 if (!existsSync(dir)) { console.log('verify-postmortems: no docs/postmortem; nothing to check.'); process.exit(0) }
 

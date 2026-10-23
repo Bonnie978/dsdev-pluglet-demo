@@ -44,4 +44,4 @@
 
 ## 仓库引用
 
-当前文件用相对 Markdown 链接（`verify-md-links` 检查）；历史引用用 tag 或 PR 号，不用提交哈希。
+当前文件用相对 Markdown 链接（`verify-md-links` 检查）；历史引用用 tag、Issue 或 PR 号，不用提交哈希（`verify-repository-references` 检查；必须引用提交时在该行标 `<!-- commit-ref-ok -->` 并说明原因）。

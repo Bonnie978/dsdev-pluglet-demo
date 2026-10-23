@@ -6,9 +6,9 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { repoRoot } from './lib/repo-files.mjs'
+import { resolveRoot } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const notesRoot = resolve(root, '.agents/notes')
 const LIFECYCLES = ['proposed', 'implemented', 'rejected', 'archived']
 const CLASSES = new Set(['feature', 'bug-fix', 'simplification', 'architecture', 'process', 'testing'])

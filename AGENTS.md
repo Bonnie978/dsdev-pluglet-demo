@@ -57,4 +57,4 @@ push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.m
 
 ## 编辑本文件
 
-`CLAUDE.md` 是本文件的符号链接；改真实文件。每条规则自包含并链接高层文档。字数预算在 `scripts/doc-budgets.manifest.json`；超了先搬迁再压缩，确有必要才提高。
+`CLAUDE.md` 是本文件的符号链接；改真实文件。skill 复制在 `.claude/skills/`，随代码提交；升级 skill 时整组替换并在 PR 里写版本。每条规则自包含并链接高层文档。字数预算在 `scripts/doc-budgets.manifest.json`；超了先搬迁再压缩，确有必要才提高。

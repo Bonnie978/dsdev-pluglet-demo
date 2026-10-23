@@ -6,9 +6,9 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { repoRoot } from './lib/repo-files.mjs'
+import { resolveRoot } from './lib/repo-files.mjs'
 
-const root = repoRoot(import.meta.url)
+const root = resolveRoot(import.meta.url)
 const checks = [
   ['pnpm-lock.yaml', 'pnpm', ['install', '--frozen-lockfile', '--lockfile-only', '--offline']],
   ['yarn.lock', 'yarn', ['install', '--immutable', '--immutable-cache', '--mode=skip-build']],
