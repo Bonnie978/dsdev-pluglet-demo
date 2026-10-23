@@ -28,7 +28,7 @@ node scripts/change-scope.mjs --base <ref>   # 变更范围报告（JSON）；�
 
 ### 本地只跑相关检查
 
-push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.md) 选最窄的、会因回归变红的检查；只报告跑过的命令。永不默认跑全量；CI 拥有全量矩阵。钩子故意很窄：pre-commit 查 staged 空白与 Markdown 换行，pre-push 只跑类型检查。
+push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.md) 选最窄的、会因回归变红的检查；只报告跑过的命令。永不默认跑全量；全量聚合由 CI 在每个 PR 上跑（[workflow](.github/workflows/dsdev-gates.yml)）。钩子故意很窄：pre-commit 查 staged 空白与 Markdown 换行，pre-push 只跑类型检查。
 
 ## 约定
 

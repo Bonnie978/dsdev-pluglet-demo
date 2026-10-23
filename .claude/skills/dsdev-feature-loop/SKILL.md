@@ -58,6 +58,7 @@ description: 任何会进入 PR 的改动（功能、bug 修复、重构、文�
 - 生成的目录（catalog）用生成器再生，不手改。
 - 双语配对的文档两边一起改并重新记录配对。
 - Agent Note 从 `proposed/` 移到 `implemented/`，`## Proposal` 改写成现在时的 `## Decision`。
+- 改动触及任何**已有** implemented note 陈述的事实（路径、名字、机制、安装方式）时，`rg` 活跃 note 树找到它并原地更新那句事实，不改决策、不追加历史。implemented note 过时没有 gate 能抓，只有这一步。
 - 破坏外部面 → 升级指南，在认识到破坏的那一刻写，不等发版。
 
 ## 6. 证据：最小相关检查 + 负向对照

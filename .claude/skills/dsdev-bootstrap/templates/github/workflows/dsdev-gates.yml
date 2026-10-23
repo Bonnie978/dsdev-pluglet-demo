@@ -1,0 +1,39 @@
+# The exhaustive gate matrix lives here, not in local hooks: contributors run the narrowest
+# relevant checks (dsdev-pre-push-checks), CI runs every aggregate on every PR.
+# Non-Node repositories: replace the install step and the `node scripts/run-gates.mjs` calls with
+# the Makefile targets (`make test-docs`, `make hygiene`, `make check-all`).
+name: dsdev gates
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  doc-quick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/run-gates.mjs doc-quick
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: corepack enable && {{PKG_MANAGER}} install --frozen-lockfile
+      - run: node scripts/run-gates.mjs hygiene
+
+  check-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: corepack enable && {{PKG_MANAGER}} install --frozen-lockfile
+      - run: node scripts/run-gates.mjs check-all
+        env:
+          CI: 'true'

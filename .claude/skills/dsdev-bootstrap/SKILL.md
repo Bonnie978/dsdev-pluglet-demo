@@ -26,7 +26,7 @@ templates/docs/postmortem/README.md     → docs/postmortem/README.md
 templates/docs/cookbook/README.md       → docs/cookbook/README.md
 templates/docs/upgrade-guide/.gitkeep   → docs/upgrade-guide/
 templates/notes/.                       → .agents/notes/（README.md、AGENTS.md、implemented/AGENTS.md、archived/AGENTS.md 与六个 class 目录；用 `cp -R templates/notes/. .agents/notes/` 才会带上 .gitkeep）
-templates/github/*                      → .github/（pull_request_template.md、ISSUE_TEMPLATE/）
+templates/github/*                      → .github/（pull_request_template.md、ISSUE_TEMPLATE/、workflows/dsdev-gates.yml）
 templates/scripts/*                     → scripts/（gate 脚本、每个 gate 的 `*.spec.mjs` 自测、gates.config.mjs、doc-budgets.manifest.json、install-hooks.mjs）
                                           自测与脚本同住 scripts/（像 DS 的 scripts/*.spec.ts），由 `gate-selftest` gate 用 `node --test 'scripts/*.spec.mjs'` 运行，零依赖，不进你的业务测试目录
 ```
@@ -83,6 +83,10 @@ install-hooks: ; node scripts/install-hooks.mjs
 `scripts/gates.config.mjs` 登记 gate 与聚合；语言特有的 gate（typecheck、lint、export-jsdoc、unit tests）在这里追加并标 `needs`。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
 
 `verify-doc-budgets --list` 显示每个常备文档的当前用量，填 AGENTS.md 时随手看。文档 gate 的遍历器只跳过**根目录**的 `lib/`、`dist/`、`build/`（构建输出）以及任何层级的 `node_modules`、`vendor`、缓存目录；源码放在 `src/lib/` 的仓库不受影响。`verify-export-jsdoc` 默认检查 `src/` 下的 `.ts/.tsx/.mts/.js/.mjs`；源码不在 `src/` 的仓库改脚本顶部的 `SRC` 判定。`verify-doc-budgets` 把每个 CJK 字符算一词，中文 AGENTS.md 不会"免费"。写 `.mjs` 的头注释时注意 `src/**/*.mjs` 里的 `*/` 会提前结束注释块。
+
+## 3b. 接 CI
+
+`templates/github/workflows/dsdev-gates.yml` 在每个 PR 上跑 `doc-quick`、`hygiene`、`check-all` 三个聚合（替换 `{{PKG_MANAGER}}`；非 Node 仓库改成 Makefile 目标）。方法的分工是"本地只跑相关检查、CI 跑全量"，没有 CI 这句话就是假的：仓库不在 GitHub 或暂时不接 CI 时，把 AGENTS.md 模板里"全量聚合由 CI 在每个 PR 上跑"改成真话（例如"尚无 CI；合并前由评审者本地跑 `check-all`"），并在 Agent Note 记录接入条件。
 
 ## 4. 填充根 AGENTS.md
 

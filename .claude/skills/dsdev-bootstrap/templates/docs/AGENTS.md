@@ -32,7 +32,7 @@
 - **一个段落一个物理行**（`verify-md-wrap`）；代码块、表格、列表保留格式。
 - **注释与 JSDoc 陈述完整契约，不是推理记录。**
 - **直接写：命名行为者与事实。** 不用隐喻；写 `contract`/`boundary`/`shape`/`surface` 前先问有没有更精确的词。
-- **双语配对一起改**（若项目维护译文）。
+- **一个仓库一种文档语言**：README、docs、Agent Note、postmortem、注释用同一种语言写正文；机器检查的结构 token（`# Agent Note:`、`Status:`、`## Problem`/`## Decision` 等标题、PR 模板的 `## Motivation` 等）保持英文原样。维护双语的仓库按配对规则两边一起改。
 
 ## 字数预算
 
