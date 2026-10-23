@@ -7,7 +7,6 @@
     "outDir": "lib",
     "declaration": true,
     "strict": true,
-    "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "rewriteRelativeImportExtensions": true,

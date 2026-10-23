@@ -32,6 +32,19 @@ export function makeWorkspace(): Workspace {
   }
 }
 
+/**
+ * Source of the plugin shape from Issue #17: `name` is a named export but `apply` is the
+ * default export. A function carries `.name` and inherits `.apply`, so a validator that
+ * only probes those properties accepts the function itself as the plugin
+ * (docs/postmortem/0001-default-exported-function-passes-plugin-validation.md).
+ */
+export const DEFAULT_FUNCTION_PLUGIN = `
+export const name = 'tag'
+export default function apply(ctx) {
+  ctx.effect(ctx.commands.register('tag', { description: 'Tag a task.', run: (args) => [\`tagged \${args[0]}\`] }))
+}
+`
+
 /** Source of a well-formed plugin that registers a `shout` command. */
 export const SHOUT_PLUGIN = `
 export const name = 'shout'

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { exitCodeFor, parseArgv, runCli, type RunResult } from '../src/cli.ts'
 import { PlugletError } from '../src/errors.ts'
-import { makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
+import { DEFAULT_FUNCTION_PLUGIN, makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
 
 describe('parseArgv', () => {
   it('defaults --profile and splits command from args', () => {
@@ -42,6 +42,14 @@ describe('runCli (real composition through the public entry)', () => {
     expect(result.error.message).toMatch(/pass --profile <file>/)
     ws.file('defect.mjs', 'export const name = "d"; export function apply() { throw new TypeError("defect") }')
     await expect(runCli(['--profile', ws.config({ plugins: ['./defect.mjs'] }), 'list'])).rejects.toThrow(TypeError)
+  })
+
+  it('reports a default-exported function plugin as a handled plugin-invalid failure, not a defect', async () => {
+    const plugin = ws.file('tag.mjs', DEFAULT_FUNCTION_PLUGIN)
+    const result = await runCli(['--config', ws.config({ plugins: ['./tag.mjs'] }), 'list'])
+    expect(result).toMatchObject({ kind: 'error', error: { kind: 'plugin-invalid' } })
+    if (result.kind !== 'error') throw new Error('unreachable')
+    expect(result.error.message).toContain(plugin)
   })
 })
 

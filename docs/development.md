@@ -26,7 +26,7 @@ DSDEV_SNAPSHOT=refresh pnpm test tests/expected   # 有意刷新期望输出，�
 
 ## Git 钩子
 
-`scripts/install-hooks.mjs` 安装窄钩子：pre-commit 查 staged 空白与 Markdown 硬换行；pre-push 跑类型检查。测试、快照、文档 gate、构建不进钩子——CI 拥有全量。
+`pnpm install` 的 postinstall 在新 checkout 安装窄钩子；node_modules 已是最新时 pnpm 会跳过 postinstall，已有的 checkout 直接运行 `node scripts/install-hooks.mjs`。钩子内容：pre-commit 查 staged 空白与 Markdown 硬换行；pre-push 跑类型检查。测试、快照、文档 gate、构建不进钩子——CI 拥有全量。
 
 ## CI gate
 

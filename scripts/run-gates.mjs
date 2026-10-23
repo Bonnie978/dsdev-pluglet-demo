@@ -35,6 +35,10 @@ const select = (id) => {
   selected.set(id, gate)
 }
 for (const id of aggregates[mode]) select(id)
+if (selected.size === 0) {
+  console.error(`run-gates: aggregate ${mode} names no gates; an empty aggregate is always green and guards nothing — register a gate or delete the aggregate and its references.`)
+  process.exit(2)
+}
 
 const concurrency = Math.max(1, Number(process.env.DSDEV_GATE_CONCURRENCY) || Math.min(8, availableParallelism()))
 const failFast = process.env.DSDEV_GATE_FAIL_FAST === '1'

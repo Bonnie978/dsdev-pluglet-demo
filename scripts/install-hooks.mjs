@@ -2,7 +2,8 @@
  * Install the narrow git hooks (`docs/development.md` § Git 钩子): pre-commit checks staged
  * whitespace and Markdown hard-wraps; pre-push runs the typecheck script when one exists.
  * Tests, snapshots, documentation gates, builds and hygiene stay out of hooks — CI owns them.
- * Safe to re-run; skips when not inside a git worktree (e.g. npm pack).
+ * Safe to re-run; skips when not inside a git worktree (e.g. npm pack). Package managers skip
+ * postinstall when node_modules is already current, so an existing checkout runs this script directly.
  */
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -17,6 +18,8 @@ mkdirSync(hooks, { recursive: true })
 
 const pkg = existsSync(resolve(root, 'package.json')) ? JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) : { scripts: {} }
 const hasTypecheck = Boolean(pkg.scripts?.typecheck)
+// The lockfile names the package manager; the hook must run the same one the repository uses.
+const pm = existsSync(resolve(root, 'pnpm-lock.yaml')) ? 'pnpm' : existsSync(resolve(root, 'yarn.lock')) ? 'yarn' : existsSync(resolve(root, 'bun.lock')) || existsSync(resolve(root, 'bun.lockb')) ? 'bun' : 'npm'
 
 const preCommit = `#!/bin/sh
 # dsdev narrow pre-commit: whitespace + markdown hard-wrap on staged files. CI owns the rest.
@@ -29,7 +32,7 @@ fi
 const prePush = `#!/bin/sh
 # dsdev narrow pre-push: incremental typecheck only.
 set -e
-${hasTypecheck ? 'npm run --silent typecheck' : 'exit 0'}
+${hasTypecheck ? `${pm} run --silent typecheck` : 'exit 0'}
 `
 writeFileSync(resolve(hooks, 'pre-commit'), preCommit)
 writeFileSync(resolve(hooks, 'pre-push'), prePush)

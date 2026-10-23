@@ -1,7 +1,9 @@
 /**
- * Plugin loading. A plugin module named-exports `name` and `apply(ctx)`; `apply`
- * registers commands through the context and returns nothing. Registrations are
- * effects: `loadPlugins()` returns one disposer that unwinds every plugin's contributions.
+ * Plugin loading. A plugin module either named-exports `name` and `apply(ctx)` or
+ * default-exports one object carrying both; `apply` registers commands through the
+ * context and returns nothing. Any other default export (a function, a primitive) is
+ * `plugin-invalid` at load, never silently adapted. Registrations are effects:
+ * `loadPlugins()` returns one disposer that unwinds every plugin's contributions.
  * @module plugins
  */
 import { pathToFileURL } from 'node:url'
@@ -39,11 +41,18 @@ export interface PluginModule {
  * @param exports - The namespace returned by `import()`.
  * @param path - Module path, for diagnostics.
  * @returns The plugin module.
- * @throws PlugletError('plugin-invalid') when `name` or `apply` is missing.
+ * @throws PlugletError('plugin-invalid') when the default export is not an object, or when
+ *   `name` or `apply` is missing. The object check comes first: a default-exported function
+ *   owns `.name` and inherits `Function.prototype.apply`, so probing those properties alone
+ *   would accept the function as a plugin (docs/postmortem/0001).
  */
 export function unwrapPlugin(exports: unknown, path: string): PluginModule {
   const ns = exports as { default?: unknown }
-  const candidate = (ns.default ?? ns) as Partial<PluginModule>
+  const unwrapped: unknown = ns.default ?? ns
+  if (typeof unwrapped !== 'object') {
+    throw new PlugletError('plugin-invalid', `plugin ${path}: default export is a ${typeof unwrapped}, not a plugin object; export "name" and "apply(ctx)" as named exports, or default-export an object { name, apply }`)
+  }
+  const candidate = unwrapped as Partial<PluginModule>
   if (typeof candidate.name !== 'string' || candidate.name === '') {
     throw new PlugletError('plugin-invalid', `plugin ${path} must export a non-empty string "name"`)
   }

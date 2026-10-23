@@ -35,7 +35,6 @@
     "verify-md-links": "node scripts/verify-md-links.mjs",
     "verify-postmortems": "node scripts/verify-postmortems.mjs",
     "verify-upgrade-guides": "node scripts/verify-upgrade-guides.mjs",
-    "verify-export-jsdoc": "node scripts/verify-export-jsdoc.mjs",
     "postinstall": "node scripts/install-hooks.mjs"
   },
   "devDependencies": {

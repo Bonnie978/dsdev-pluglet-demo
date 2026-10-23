@@ -40,6 +40,8 @@ export function apply(ctx) {
 }
 ```
 
+也可以把同一个 `{ name, apply }` 对象作为默认导出。只接受这两种形状：默认导出是函数（例如 `export default function apply(ctx)`）或其他非对象值时，加载在启动时以 `plugin-invalid` 失败，stderr 指出插件文件、实际类型与两种可接受形状；缺少 `name` 或 `apply` 同样是 `plugin-invalid`。
+
 注册即效果：插件树释放时所有命令被移除。同名命令第二次注册抛 `duplicate-registration`。
 
 ## 开发
