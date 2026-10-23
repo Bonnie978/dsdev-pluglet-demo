@@ -1,5 +1,5 @@
 /**
- * Enforce `wc -w`-style word ceilings from `scripts/doc-budgets.manifest.json`.
+ * Enforce word ceilings (whitespace tokens plus one per CJK character) from `scripts/doc-budgets.manifest.json`.
  * Missing budgeted files and invalid ceilings fail; `--list` reports current usage.
  * Raising a ceiling requires the justification defined in `docs/AGENTS.md`.
  */
@@ -11,7 +11,14 @@ const root = repoRoot(import.meta.url)
 const manifestPath = resolve(root, 'scripts/doc-budgets.manifest.json')
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 const listOnly = process.argv.includes('--list')
-const countWords = text => text.split(/\s+/).filter(Boolean).length
+// `wc -w` counts whitespace-delimited tokens, which makes CJK prose nearly free; count each
+// CJK character as one word so Chinese and English documents spend the budget alike.
+const CJK = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u30FF\uAC00-\uD7AF]/g
+const countWords = text => text.split(/\s+/).filter(Boolean).reduce((n, token) => {
+  const cjk = token.match(CJK)?.length ?? 0
+  const rest = token.replace(CJK, '').trim() === '' ? 0 : 1
+  return n + cjk + rest
+}, 0)
 
 const failures = []
 const rows = []

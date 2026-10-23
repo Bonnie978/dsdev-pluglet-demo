@@ -1,14 +1,15 @@
 /**
- * TypeScript heuristic: every top-level `export` declaration in `src/**` is immediately
- * preceded by a JSDoc block, and exported functions document `@param` for each
- * parameter and `@returns` for non-void results. Re-exports (`export * from`,
- * `export { x } from`, `export type { … }`) are exempt. Adapt `SRC_GLOBS` per repository.
+ * Heuristic for TypeScript and ESM JavaScript: every top-level `export` declaration under
+ * `src/` is immediately preceded by a JSDoc block, and exported functions document `@param`
+ * for each parameter and `@returns` when they return a value (a `: void` annotation, or for
+ * unannotated JavaScript the absence of a `return <expr>` statement, marks a void function).
+ * Re-exports are exempt. Adapt the `SRC` predicate when sources live elsewhere.
  */
 import { readFileSync } from 'node:fs'
 import { repoRoot, walk } from './lib/repo-files.mjs'
 
 const root = repoRoot(import.meta.url)
-const SRC = rel => /(^|\/)src\/.*\.(ts|tsx|mts)$/.test(rel) && !/\.(spec|test|d)\.ts$/.test(rel)
+const SRC = rel => /(^|\/)src\/.*\.(ts|tsx|mts|js|mjs)$/.test(rel) && !/\.(spec|test)\.(ts|js|mjs)$|\.d\.ts$/.test(rel)
 const EXPORT = /^export\s+(?:default\s+)?(?:async\s+)?(function|class|const|let|var|interface|type|enum|abstract class)\s+([A-Za-z_$][\w$]*)?/
 
 /** Split a parameter list on commas that are not nested inside <>, (), {} or []. */
@@ -23,6 +24,20 @@ function splitTopLevel(text) {
   }
   if (current.trim() !== '') out.push(current)
   return out
+}
+
+/** Does the function starting at `start` contain a `return <expr>` statement? (unannotated sources) */
+function returnsValue(lines, start) {
+  let depth = 0
+  let opened = false
+  for (let i = start; i < lines.length; i++) {
+    for (const ch of lines[i]) {
+      if (ch === '{') { depth++; opened = true } else if (ch === '}') depth--
+    }
+    if (opened && /\breturn\s+[^;\s]/.test(lines[i])) return true
+    if (opened && depth === 0) break
+  }
+  return false
 }
 
 const errors = []
@@ -44,7 +59,8 @@ for (const rel of walk(root, SRC)) {
       const sig = lines.slice(i, i + 5).join(' ')
       const params = splitTopLevel(sig.match(/\(([^)]*)\)/)?.[1] ?? '').map(p => p.trim().replace(/[?:=].*$/, '').replace(/^\.\.\./, '')).filter(p => p && !p.startsWith('{') && !p.startsWith('['))
       for (const p of params) if (!new RegExp(`@param\\s+(?:\\{[^}]*\\}\\s+)?${p}\\b`).test(doc)) errors.push(`${rel}:${i + 1}: @param ${p} missing`)
-      const isVoid = /\)\s*:\s*(void|Promise<void>)\b/.test(sig)
+      const annotated = /\)\s*:\s*[A-Za-z_$<]/.test(sig)
+      const isVoid = annotated ? /\)\s*:\s*(void|Promise<void>)\b/.test(sig) : !returnsValue(lines, i)
       if (!isVoid && !/@returns?\b/.test(doc)) errors.push(`${rel}:${i + 1}: @returns missing on non-void function`)
     }
   }

@@ -36,7 +36,7 @@
 
 ## 字数预算
 
-[scripts/doc-budgets.manifest.json](../scripts/doc-budgets.manifest.json) 设常备文档上限；`verify-doc-budgets` 执行。变红时：搬迁 → 压缩 → 有理由才提高。上限是护栏不是削减目标：目标以下保留 ≥5% 余量。
+[scripts/doc-budgets.manifest.json](../scripts/doc-budgets.manifest.json) 设常备文档上限；`verify-doc-budgets` 执行，计数为空白分隔的词加每个 CJK 字符各算一词，中英文消耗预算相当。变红时：搬迁 → 压缩 → 有理由才提高。上限是护栏不是削减目标：目标以下保留 ≥5% 余量。
 
 ## slop 清单
 
