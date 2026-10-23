@@ -6,5 +6,11 @@ postmortem 不是 Agent Note（那记录有意的设计决策与被拒方案）�
 
 每篇以 **Executive summary** 开头：忙碌读者三十秒读完的一段。
 
+## 护栏互链
+
+`## Guardrails added` 至少含一个相对 Markdown 链接，解析到仓库内现有的文件（测试、文档页、AGENTS.md、Agent Note；图片链接与代码块内的链接不算）。至少一个被链接的 Markdown 文件、根 `AGENTS.md` 或 `docs/defensive-patterns/` 页面链回这篇 postmortem；非 Markdown 的护栏（测试、源码）是合法目标但不承担回链，注释写契约不写理由。`verify-postmortems` 执行两条。
+
+## 目录
+
 | # | 标题 |
 |---|---|
