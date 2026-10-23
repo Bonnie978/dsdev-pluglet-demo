@@ -1,6 +1,21 @@
 {
-  "systemPromptSection": "pluglet is the user's task list: a JSON file on disk that the user also reads and writes through the `pluglet` CLI, so what you add is visible to them and what they add is visible to you. Use the pluglet_* tools whenever the user asks to record, review or count their tasks, or asks which pluglet commands their configuration offers. Pass the same `config` value on every call in a conversation so every call addresses one task file. Only add, list and help are callable here: a task cannot be completed or deleted through these tools, and a command that pluglet_help reports but these tools do not cover is something the user runs themselves.",
+  "systemPromptSection": "pluglet is the user's task list: a JSON file on disk that the user also reads and writes through the `pluglet` CLI, so what you add or complete is visible to them and what they add is visible to you. Use the pluglet_* tools whenever the user asks to record, review, count or finish their tasks, or asks which pluglet commands their profile offers. Pass the same `profile` value on every call in a conversation so every call addresses one task file. Only list, add, done and help are callable here: a task cannot be edited or deleted through these tools, and a command that pluglet_help reports but these tools do not cover is something the user runs themselves.",
   "tools": [
+    {
+      "name": "pluglet_list",
+      "description": "Return every task in id order, one per line as `<id> [x] <title>` for a done task and `<id> [ ] <title>` for an open one. Empty output means the list has no tasks.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Omit it to use `pluglet.profile.json` there."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     {
       "name": "pluglet_add",
       "description": "Append a new, not-done task to the task list and return `added <id>: <title>`, where id is the next sequential integer.",
@@ -12,10 +27,10 @@
             "minLength": 1,
             "description": "Task title, stored verbatim."
           },
-          "config": {
+          "profile": {
             "type": "string",
-            "default": "pluglet.json",
-            "description": "Path to the pluglet config file; relative paths resolve from the working directory. Omit it to use `pluglet.json` there."
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Omit it to use `pluglet.profile.json` there."
           }
         },
         "required": ["title"],
@@ -23,30 +38,36 @@
       }
     },
     {
-      "name": "pluglet_list",
-      "description": "Return every task in id order, one per line as `<id> [x] <title>` for a done task and `<id> [ ] <title>` for an open one. Empty output means the list has no tasks.",
+      "name": "pluglet_done",
+      "description": "Mark the task with the given id done and return `done <id>: <title>`; a task that is already done returns `already done <id>: <title>` and the list is unchanged. An id that no task has is an error.",
       "parameters": {
         "type": "object",
         "properties": {
-          "config": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Id of the task to complete, as shown by pluglet_list."
+          },
+          "profile": {
             "type": "string",
-            "default": "pluglet.json",
-            "description": "Path to the pluglet config file; relative paths resolve from the working directory. Omit it to use `pluglet.json` there."
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Omit it to use `pluglet.profile.json` there."
           }
         },
+        "required": ["id"],
         "additionalProperties": false
       }
     },
     {
       "name": "pluglet_help",
-      "description": "Return the commands available under the config, one per line as `<name>  <description>`, including the commands that the config's plugins add.",
+      "description": "Return the commands available under the profile, one per line as `<name>  <description>`, including the commands that the profile's plugins add.",
       "parameters": {
         "type": "object",
         "properties": {
-          "config": {
+          "profile": {
             "type": "string",
-            "default": "pluglet.json",
-            "description": "Path to the pluglet config file; relative paths resolve from the working directory. Omit it to use `pluglet.json` there."
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Omit it to use `pluglet.profile.json` there."
           }
         },
         "additionalProperties": false

@@ -85,9 +85,15 @@ function violations(text: string): string[] {
   return out
 }
 
-interface Manifest { systemPromptSection: string; tools: { name: string; description: string; parameters: { properties: Record<string, Json> } }[] }
+interface Manifest { systemPromptSection: string; tools: { name: string; description: string; parameters: { properties: Record<string, Json>; required?: string[] } }[] }
 const text = readFileSync(MANIFEST, 'utf8')
 const manifest = JSON.parse(text) as Manifest
+/** The tool named `name` in `m`; a missing tool is a defect of the manifest, reported by name. */
+function tool(name: string, m: Manifest = manifest) {
+  const found = m.tools.find(t => t.name === name)
+  if (found === undefined) throw new Error(`manifest has no tool ${name}`)
+  return found
+}
 const mutated = (edit: (m: Manifest) => void) => { const m = structuredClone(manifest); edit(m); return violations(JSON.stringify(m)) }
 
 describe('tools/pluglet.tools.json', () => {
@@ -95,18 +101,20 @@ describe('tools/pluglet.tools.json', () => {
     expect(violations(text)).toEqual([])
   })
 
-  it('exposes exactly the core commands, with the CLI default for `config`', () => {
+  it('exposes exactly the core commands, with the CLI default for `profile`', () => {
     const commands = new Registry<Command>('command')
     const dispose = registerCoreCommands(commands, new TaskStore('/unused/tasks.json'))
-    const core = commands.names().map(n => `pluglet_${n}`).sort()
+    const core = commands.names().map(n => `pluglet_${n}`)
     dispose()
-    expect(manifest.tools.map(t => t.name).sort()).toEqual(core)
-    const configs = manifest.tools.map(t => t.parameters.properties.config)
-    for (const config of configs) {
-      expect(config, 'every tool takes the config path').toBeDefined()
-      expect(config, 'the shared parameter has one definition').toEqual(configs[0])
+    expect(manifest.tools.map(t => t.name), 'one tool per core command, in registration order').toEqual(core)
+    const profiles = manifest.tools.map(t => t.parameters.properties.profile)
+    for (const profile of profiles) {
+      expect(profile, 'every tool takes the profile path').toBeDefined()
+      expect(profile, 'the shared parameter has one definition').toEqual(profiles[0])
     }
-    expect(configs[0]!.default).toBe(parseArgv(['help']).configPath)
+    expect(profiles[0]!.default).toBe(parseArgv(['help']).configPath)
+    expect(tool('pluglet_done').parameters.required, 'done needs a task id').toEqual(['id'])
+    expect(tool('pluglet_done').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1 })
   })
 })
 
@@ -117,26 +125,27 @@ describe('manifest validator (rejected cases)', () => {
   })
 
   it('rejects a tool missing one of name, description or parameters', () => {
-    expect(mutated(m => { m.tools[0]!.name = 'Pluglet Add' })).toContain('tools[0]: name must be a snake_case string')
-    expect(mutated(m => { m.tools[1]!.description = '' })).toContain('pluglet_list: description missing or empty')
-    expect(mutated(m => { (m.tools[2] as Json).parameters = { type: 'string' } })).toContain('pluglet_help: parameters must be a JSON Schema object with type "object" and properties')
+    expect(mutated(m => { tool('pluglet_add', m).name = 'Pluglet Add' })).toContain('tools[1]: name must be a snake_case string')
+    expect(mutated(m => { tool('pluglet_list', m).description = '' })).toContain('pluglet_list: description missing or empty')
+    expect(mutated(m => { (tool('pluglet_help', m) as Json).parameters = { type: 'string' } })).toContain('pluglet_help: parameters must be a JSON Schema object with type "object" and properties')
   })
 
   it('rejects a parameter without a description and a required entry naming no parameter', () => {
-    expect(mutated(m => { delete m.tools[0]!.parameters.properties.title!.description })).toContain('pluglet_add.parameters.title: missing description')
-    expect(mutated(m => { (m.tools[0]!.parameters as Json).required = ['nope'] })).toContain('pluglet_add: required names unknown parameter "nope"')
+    expect(mutated(m => { delete tool('pluglet_add', m).parameters.properties.title!.description })).toContain('pluglet_add.parameters.title: missing description')
+    expect(mutated(m => { tool('pluglet_add', m).parameters.required = ['nope'] })).toContain('pluglet_add: required names unknown parameter "nope"')
+    expect(mutated(m => { delete tool('pluglet_done', m).parameters.properties.id })).toContain('pluglet_done: required names unknown parameter "id"')
   })
 
   it('rejects two tools sharing a sentence', () => {
-    const first = manifest.tools[1]!.description.split(/(?<=\.)\s+/)[0]!
-    expect(mutated(m => { m.tools[2]!.description = `${first} Also something else.` }))
+    const first = tool('pluglet_list').description.split(/(?<=\.)\s+/)[0]!
+    expect(mutated(m => { tool('pluglet_help', m).description = `${first} Also something else.` }))
       .toContainEqual(expect.stringMatching(/^pluglet_help: description repeats a sentence of pluglet_list: /))
   })
 
   it('rejects a system prompt section that restates a tool or parameter description', () => {
-    expect(mutated(m => { m.systemPromptSection += ` ${manifest.tools[0]!.description}` }))
+    expect(mutated(m => { m.systemPromptSection += ` ${tool('pluglet_add').description}` }))
       .toContainEqual(expect.stringMatching(/^systemPromptSection: restates a sentence of pluglet_add: /))
-    expect(mutated(m => { m.systemPromptSection = String(manifest.tools[0]!.parameters.properties.title!.description) }))
+    expect(mutated(m => { m.systemPromptSection = String(tool('pluglet_add').parameters.properties.title!.description) }))
       .toContainEqual(expect.stringMatching(/^systemPromptSection: restates a parameter description: /))
     expect(mutated(m => { m.systemPromptSection = ' ' })).toContain('systemPromptSection: missing or empty')
   })
