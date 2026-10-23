@@ -24,3 +24,8 @@ test('skips the frozen archive', () => {
   const f = fixture({ '.agents/notes/archived/process/2026-01-01-x.md': '# T\n\na\nb\n' })
   try { assert.equal(runGate('verify-md-wrap.mjs', f.root).status, 0) } finally { f.dispose() }
 })
+
+test('skips build output only at the root; a nested lib/ directory is source and is checked', () => {
+  const f = fixture({ 'lib/out.md': '# T\n\na\nb\n', 'src/lib/notes.md': '# T\n\na\nb\n' })
+  try { const r = runGate('verify-md-wrap.mjs', f.root); assert.equal(r.status, 1); assert.match(r.out, /src\/lib\/notes\.md:3/); assert.doesNotMatch(r.out, /lib\/out\.md/) } finally { f.dispose() }
+})

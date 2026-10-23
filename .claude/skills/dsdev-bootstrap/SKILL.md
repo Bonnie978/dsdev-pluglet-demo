@@ -31,7 +31,7 @@ templates/scripts/*                     → scripts/（gate 脚本、每个 gate
                                           自测与脚本同住 scripts/（像 DS 的 scripts/*.spec.ts），由 `gate-selftest` gate 用 `node --test 'scripts/*.spec.mjs'` 运行，零依赖，不进你的业务测试目录
 ```
 
-模板里的 `{{PROJECT}}`、`{{PKG_MANAGER}}`、`{{TEST_CMD}}`、`{{TYPECHECK_CMD}}`、`{{LINT_CMD}}` 全部替换；找不到对应命令的占位符删掉整行，不留空命令。
+模板里的 `{{PROJECT}}`、`{{PKG_MANAGER}}`、`{{TEST_CMD}}`、`{{TYPECHECK_CMD}}`、`{{LINT_CMD}}` 全部替换；找不到对应命令的占位符删掉整行，不留空命令。命令存在但永远绿（例如 `lint: echo … && exit 0` 这类占位脚本）等同于不存在：不写进 AGENTS.md 的命令表、不登记为 gate、不列为证据，在 development.md 写一句"占位，接入条件是……"。
 
 模板还带着给填空者看的残留，接入时一并清掉：表格里的占位行（如 `| <项目特有工件> | <对应页> |`）、二选一的句子（"`package.json`（或 Makefile）"留下适用的一个）、`gates.config.mjs` 里 "examples; delete or adapt" 之类描述模板状态而非仓库状态的注释。HEAD 处的读者必须能解析每一句（[dsdev-doc-standard](../dsdev-doc-standard/SKILL.md) 的"一个测试"）。
 
@@ -82,7 +82,7 @@ install-hooks: ; node scripts/install-hooks.mjs
 
 `scripts/gates.config.mjs` 登记 gate 与聚合；语言特有的 gate（typecheck、lint、export-jsdoc、unit tests）在这里追加并标 `needs`。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
 
-`verify-doc-budgets --list` 显示每个常备文档的当前用量，填 AGENTS.md 时随手看。`verify-export-jsdoc` 默认检查 `src/` 下的 `.ts/.tsx/.mts/.js/.mjs`；源码不在 `src/` 的仓库改脚本顶部的 `SRC` 判定。`verify-doc-budgets` 把每个 CJK 字符算一词，中文 AGENTS.md 不会"免费"。写 `.mjs` 的头注释时注意 `src/**/*.mjs` 里的 `*/` 会提前结束注释块。
+`verify-doc-budgets --list` 显示每个常备文档的当前用量，填 AGENTS.md 时随手看。文档 gate 的遍历器只跳过**根目录**的 `lib/`、`dist/`、`build/`（构建输出）以及任何层级的 `node_modules`、`vendor`、缓存目录；源码放在 `src/lib/` 的仓库不受影响。`verify-export-jsdoc` 默认检查 `src/` 下的 `.ts/.tsx/.mts/.js/.mjs`；源码不在 `src/` 的仓库改脚本顶部的 `SRC` 判定。`verify-doc-budgets` 把每个 CJK 字符算一词，中文 AGENTS.md 不会"免费"。写 `.mjs` 的头注释时注意 `src/**/*.mjs` 里的 `*/` 会提前结束注释块。
 
 ## 4. 填充根 AGENTS.md
 
@@ -91,7 +91,7 @@ install-hooks: ; node scripts/install-hooks.mjs
 ## 5. 第一批 Agent Note 与 defensive pattern
 
 - 为"采用这套方法"本身写一条 `implemented/process/<date>-adopt-dsdev-method.md`，记录备选（只用 CLAUDE.md、只用 ADR、不写 note）与后果。
-- 把仓库已知的、曾经咬过人的坑写成 `docs/defensive-patterns/general.md` 的条目：规则 + 防止的缺陷 + 判定条件 + 边界 + 正反例。模板里的条目是从 DeepSeek Harness 借来的**种子**，用的是 JavaScript 词汇（`setTimeout`、`?.`、`WeakMap`）：保留对本仓库成立的规则，把例子换成本语言的，删掉不适用的，并把开头那句"实际在此类项目里出过"改成本仓库的真话。
+- 把仓库已知的、曾经咬过人的坑写成 `docs/defensive-patterns/general.md` 的条目：规则 + 防止的缺陷 + 判定条件 + 边界 + 正反例。模板里的条目是从 DeepSeek Harness 借来的**种子**，讲的是运行时、并发、子进程、释放，用的是 JavaScript 词汇：保留对本仓库成立的规则并换成本语言的例子；对一个纯函数库可能一条都不成立，那就整页按本仓库的真实行为重写，开头那句"实际出过"也改成真话（没有事故记录就写没有）。
 
 ## 6. 验证：每个 gate 做负向对照
 
@@ -99,7 +99,24 @@ install-hooks: ; node scripts/install-hooks.mjs
 node scripts/run-gates.mjs doc-quick          # 应全绿
 ```
 
-`node --test 'scripts/*.spec.mjs'`（或 `hygiene` 聚合里的 `gate-selftest`）运行每个 gate 的自测。然后再逐个制造无效案例并观察变红：给一个 Agent Note 改坏第三行；在 docs/ 里写一个两行的段落；加一个指向不存在文件的链接；把 AGENTS.md 预算改成 10。每个都要看到脚本命名了那个案例，再还原。把观察到的命令与输出写进 PR 的 Testing/Proof。
+`node --test 'scripts/*.spec.mjs'`（或 `hygiene` 聚合里的 `gate-selftest`）运行每个 gate 的自测。然后对**每个**登记的 gate 制造一个无效案例、通过真实 runner 观察变红、确认错误信息命名了那个案例、还原：
+
+| gate | 注入 |
+|---|---|
+| verify-md-wrap | docs/ 里一个两行的段落 |
+| verify-md-links | 指向不存在文件的链接 |
+| verify-doc-budgets | manifest 里把 AGENTS.md 上限改成 10 |
+| verify-agent-note-format | note 第 3 行改成 `Status: done` |
+| verify-postmortems | 新建只有 `## Root cause` 且未登记的 postmortem |
+| verify-upgrade-guides | `docs/upgrade-guide/v1/x/guide.md`（非 semver） |
+| verify-archived-agent-notes | 放一条未封存的 note 进 `archived/<class>/` |
+| verify-repository-references | 散文里写 "fixed in commit 9f8e7d6" |
+| verify-export-jsdoc | 删掉一个导出的 JSDoc |
+| verify-lockfile | 改 package.json 一个依赖的版本范围 |
+| gate-selftest | 把某个 verify 脚本的 `process.exit(1)` 改成 `exit(0)` |
+| typecheck / lint / unit | 一个类型错误 / 一个未用 import / 改一个期望值 |
+
+把观察到的命令与输出写进 PR 的 Testing/Proof。
 
 安装钩子：`node scripts/install-hooks.mjs`（postinstall 只在新 checkout 触发，已有 node_modules 时包管理器会跳过它），然后故意提交一个尾随空白确认 pre-commit 拒绝。
 

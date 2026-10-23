@@ -5,8 +5,10 @@
 import { readdirSync, realpathSync, statSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 
-/** Directory names never descended into. */
-export const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'lib', 'build', 'coverage', '.generated', '.cache', 'vendor', '.venv', 'venv', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.tox', 'target'])
+/** Directory names never descended into, at any depth. */
+export const SKIP_DIRS = new Set(['.git', 'node_modules', 'coverage', '.generated', '.cache', 'vendor', '.venv', 'venv', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.tox', 'target'])
+/** Build outputs skipped only at the repository root; a nested `src/lib/` is source and is checked. */
+export const ROOT_BUILD_DIRS = new Set(['dist', 'lib', 'build'])
 
 /** Resolve the repository root from a script location (`scripts/` or `scripts/lib/`). */
 export function repoRoot(importMetaUrl) {
@@ -58,6 +60,7 @@ export function walk(root, predicate, { includeArchived = false } = {}) {
       const rel = relative(root, abs).split(sep).join('/')
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue
+        if (dir === root && ROOT_BUILD_DIRS.has(entry.name)) continue
         // Skill templates are scaffolding copied into other repositories; their links resolve there, not here.
         if (/^(\.claude|\.agents)\/skills\/[^/]+\/templates$/.test(rel)) continue
         if (!includeArchived && rel === '.agents/notes/archived') continue

@@ -15,7 +15,7 @@ export const gates = [
   { id: 'upgrade-guides', label: 'verify-upgrade-guides', ...node('verify-upgrade-guides'), quick: true },
   { id: 'archived-agent-notes', label: 'verify-archived-agent-notes', ...node('verify-archived-agent-notes'), quick: true },
   { id: 'repository-references', label: 'verify-repository-references', ...node('verify-repository-references'), quick: true },
-  { id: 'gate-selftest', label: 'gate self-tests (node --test scripts/*.test.mjs)', command: 'node', args: ['--test', 'scripts/*.spec.mjs'] },
+  { id: 'gate-selftest', label: 'gate self-tests (node --test scripts/*.spec.mjs)', command: 'node', args: ['--test', 'scripts/*.spec.mjs'] },
   { id: 'lockfile', label: 'verify-lockfile', ...node('verify-lockfile') },
   { id: 'typecheck', label: 'typecheck', command: 'pnpm', args: ['run', '--silent', 'typecheck'] },
   { id: 'export-jsdoc', label: 'verify-export-jsdoc', ...node('verify-export-jsdoc'), quick: true },

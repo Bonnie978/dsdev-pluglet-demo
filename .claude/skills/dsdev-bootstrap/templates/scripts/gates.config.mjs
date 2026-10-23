@@ -15,7 +15,7 @@ export const gates = [
   { id: 'upgrade-guides', label: 'verify-upgrade-guides', ...node('verify-upgrade-guides'), quick: true },
   { id: 'archived-agent-notes', label: 'verify-archived-agent-notes', ...node('verify-archived-agent-notes'), quick: true },
   { id: 'repository-references', label: 'verify-repository-references', ...node('verify-repository-references'), quick: true },
-  { id: 'gate-selftest', label: 'gate self-tests (node --test scripts/*.test.mjs)', command: 'node', args: ['--test', 'scripts/*.spec.mjs'] },
+  { id: 'gate-selftest', label: 'gate self-tests (node --test scripts/*.spec.mjs)', command: 'node', args: ['--test', 'scripts/*.spec.mjs'] },
   { id: 'lockfile', label: 'verify-lockfile', ...node('verify-lockfile') },
   // Register this repository's language gates here (typecheck, lint, unit tests, export-jsdoc) and
   // name them in the aggregates below; a gate not named in an executed aggregate does not exist.

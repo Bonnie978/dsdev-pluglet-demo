@@ -8,7 +8,8 @@
 src/          源码（按模块分目录，模块 README 是该模块的契约）
 tests/        测试，与它锻炼的模块同名
 docs/         文档（docs/AGENTS.md 定义层级）
-.agents/      Agent Note 与 skill
+.agents/      Agent Note（.agents/notes）
+.claude/      skill（.claude/skills，随代码提交）
 scripts/      gate 与生成器
 ```
 
