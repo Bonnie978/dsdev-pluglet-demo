@@ -37,3 +37,7 @@ schema 省略、提示过滤、门面、包装器、监听顺序不是执行，�
 ## 释放到静止
 
 获取后立即注册清理；清理停止新回调、detach 监听、恢复全局钩子、终止拥有的工作并**等待**完成信号。只调 `abort()/close()/kill()` 不等完成是不完整的拆卸。
+
+## 校验先判类别再探测字段
+
+对来自进程外的值（模块命名空间、解析后的 JSON、argv）做结构校验时，先断定它的类别——是非 null 的对象还是函数、原始值——再探测字段。`Function.prototype` 为每个函数提供 `apply`、`call`、`bind`、`name`、`length`，数组与字符串提供 `length`，所以 `typeof v.apply === 'function'` 对任何函数都成立，探测字段不能代替判别类别。判定条件：在类别未确定的值上出现 `typeof v.field` 或 `'field' in v`，或把 `unknown` 直接 `as` 成目标接口再探测。正例：`if (typeof v !== 'object' || v === null) throw ...; const c = v as Partial<T>`。反例：`const c = (ns.default ?? ns) as Partial<T>; if (typeof c.apply !== 'function') throw ...`（[postmortem 0001](../postmortem/0001-default-exported-function-passes-plugin-validation.md)）。校验器的测试用真实加载器喂作者会犯的错误输入，不只喂手装的正确对象。

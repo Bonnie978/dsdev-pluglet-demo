@@ -8,3 +8,4 @@ postmortem 不是 Agent Note（那记录有意的设计决策与被拒方案）�
 
 | # | 标题 |
 |---|---|
+| 0001 | [默认导出函数的插件使 CLI 以裸 TypeError 崩溃 — 校验把 `Function.prototype.apply` 当成了插件的 `apply`](0001-default-exported-function-passes-plugin-validation.md) |

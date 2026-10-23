@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
+import { DEFAULT_FUNCTION_PLUGIN, makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
 
 // Real entry path: the published bin runs under plain node from built lib/ (docs/testing.md).
 // `pnpm run test:e2e` builds first; a stale or missing lib/ is a failure, not a skip.
@@ -37,6 +37,17 @@ describe('pluglet bin', () => {
     const r = pluglet(ws.root, 'shout', 'ok')
     expect(r.status).toBe(0)
     expect(r.stdout).toBe('OK\n')
+  })
+
+  it('rejects a default-exported function plugin with exit 1, naming the file and the fix, with no stack trace', () => {
+    const plugin = ws.file('tag.mjs', DEFAULT_FUNCTION_PLUGIN)
+    ws.config({ plugins: ['./tag.mjs'] })
+    const r = pluglet(ws.root, 'list')
+    expect(r.status).toBe(1)
+    expect(r.stdout).toBe('')
+    expect(r.stderr).toMatch(/^pluglet: plugin .*tag\.mjs: default export is a function/)
+    expect(r.stderr).toContain(plugin)
+    expect(r.stderr).not.toMatch(/TypeError|\n\s+at /)
   })
 
   it('exits 1 on a handled failure and 2 on usage, writing the reason to stderr', () => {

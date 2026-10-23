@@ -37,6 +37,7 @@ push 前按 [dsdev-pre-push-checks](.claude/skills/dsdev-pre-push-checks/SKILL.m
 - **边界上显式优于隐式**：默认值是显式的 `resolve(request)` 步，不是 `run()` 里的 `?? default`。
 - **插件里没有硬编码的可调参数**：部署可变的选择是经验证的配置字段。
 - **类型化、结构化的失败**：不靠解析消息路由；空 catch 命名错误与原因（[错误处理](.claude/skills/dsdev-error-handling/SKILL.md)）。
+- **校验外部值先判类别再探测字段**：函数自带 `name`/`apply`，`typeof v.apply` 不能代替 `typeof v === 'object'`（[模式](docs/defensive-patterns/general.md#校验先判类别再探测字段)，[postmortem 0001](docs/postmortem/0001-default-exported-function-passes-plugin-validation.md)）。
 - **测试描述行为不描述正确性**：过时的行为连同其测试一起改，PR 里说明原因。
 - **真实入口路径**：产品可见的模块有非 unit 的真实组合测试；验证世界不验证自述（[测试策略](docs/testing.md)）。
 - **Agent Note 只为持久的决策理由**；机械/局部改动免写；归档的 note 是冻结历史（[规则](.agents/notes/README.md)）。
