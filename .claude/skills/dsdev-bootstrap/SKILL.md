@@ -110,7 +110,7 @@ node scripts/run-gates.mjs doc-quick          # 应全绿
 | verify-postmortems | 新建只有 `## Root cause` 且未登记的 postmortem |
 | verify-upgrade-guides | `docs/upgrade-guide/v1/x/guide.md`（非 semver） |
 | verify-archived-agent-notes | 放一条未封存的 note 进 `archived/<class>/` |
-| verify-repository-references | 散文里写 "fixed in commit 9f8e7d6" |
+| verify-repository-references | 散文里写 `fixed in commit 9f8e7d6`（gate 看的是散文，行内代码不算） |
 | verify-export-jsdoc | 删掉一个导出的 JSDoc |
 | verify-lockfile | 改 package.json 一个依赖的版本范围 |
 | gate-selftest | 把某个 verify 脚本的 `process.exit(1)` 改成 `exit(0)` |
