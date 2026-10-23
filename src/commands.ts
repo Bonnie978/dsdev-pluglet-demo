@@ -1,11 +1,28 @@
 /**
- * Core commands: `list`, `add`, `help`. Plugins add more through `ctx.commands`.
+ * Core commands: `list`, `add`, `done`, `help`. Plugins add more through `ctx.commands`.
  * @module commands
  */
 import { PlugletError } from './errors.ts'
 import type { Command } from './plugins.ts'
 import type { Disposer, Registry } from './registry.ts'
 import type { TaskStore } from './store.ts'
+
+/** A task id as typed on the command line: one positive decimal integer. */
+const TASK_ID = /^[1-9]\d*$/
+
+/**
+ * Parse the arguments of `done <id>`.
+ * @param args - Positional arguments after the command name.
+ * @returns The task id.
+ * @throws PlugletError('usage') unless exactly one positive integer is given.
+ */
+function parseTaskId(args: readonly string[]): number {
+  const [id, ...extra] = args
+  if (id === undefined || extra.length > 0 || !TASK_ID.test(id)) {
+    throw new PlugletError('usage', 'usage: done <id> (one positive integer task id)')
+  }
+  return Number(id)
+}
 
 /**
  * Register the core commands.
@@ -24,6 +41,13 @@ export function registerCoreCommands(commands: Registry<Command>, store: TaskSto
       run: (args) => {
         const task = store.add(args.join(' '))
         return [`added ${task.id}: ${task.title}`]
+      },
+    }),
+    commands.register('done', {
+      description: 'Mark a task done: done <id>. Already-done tasks are reported, not failed.',
+      run: (args) => {
+        const { task, changed } = store.complete(parseTaskId(args))
+        return [`${changed ? 'done' : 'already done'} ${task.id}: ${task.title}`]
       },
     }),
     commands.register('help', {

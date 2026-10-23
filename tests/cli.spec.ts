@@ -67,7 +67,7 @@ describe('exitCodeFor', () => {
   it('maps ok to 0, usage to 2, other handled failures to 1', () => {
     expect(exitCodeFor({ kind: 'ok', lines: [] })).toBe(0)
     expect(exitCodeFor(error('usage'))).toBe(2)
-    for (const kind of ['config-missing', 'config-invalid', 'plugin-invalid', 'duplicate-registration', 'unknown-command'] as const) {
+    for (const kind of ['config-missing', 'config-invalid', 'plugin-invalid', 'duplicate-registration', 'unknown-command', 'unknown-task'] as const) {
       expect(exitCodeFor(error(kind))).toBe(1)
     }
   })

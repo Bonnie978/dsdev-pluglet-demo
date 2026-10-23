@@ -26,6 +26,29 @@ describe('TaskStore', () => {
     expect(existsSync(store.path)).toBe(false)
   })
 
+  it('completes a task once; a repeat is a no-op that leaves the file bytes untouched', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.add('one')
+    store.add('two')
+    expect(store.complete(2)).toEqual({ task: { id: 2, title: 'two', done: true }, changed: true })
+    expect(store.list().map(t => t.done)).toEqual([false, true])
+    const before = readFileSync(store.path)
+    expect(store.complete(2)).toEqual({ task: { id: 2, title: 'two', done: true }, changed: false })
+    expect(readFileSync(store.path).equals(before)).toBe(true)
+    expect(existsSync(`${store.path}.tmp`)).toBe(false)
+  })
+
+  it('rejects an unknown id as unknown-task without touching the file', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.add('one')
+    const before = readFileSync(store.path)
+    let caught: unknown
+    try { store.complete(7) } catch (error) { caught = error }
+    expect(caught).toBeInstanceOf(PlugletError)
+    expect((caught as PlugletError).kind).toBe('unknown-task')
+    expect(readFileSync(store.path).equals(before)).toBe(true)
+  })
+
   it('fails loud on a corrupt or non-array store file', () => {
     expect(() => new TaskStore(ws.file('bad.json', '{')).list()).toThrow(PlugletError)
     expect(() => new TaskStore(ws.file('obj.json', '{}')).list()).toThrow(PlugletError)
