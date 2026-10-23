@@ -20,14 +20,14 @@ export interface Config {
 const KNOWN_KEYS = new Set(['store', 'plugins'])
 
 /**
- * Read and validate a config file.
+ * Read and validate a config file (the CLI calls it a profile and selects it with `--profile`).
  * @param path - Path to the JSON config file; relative paths resolve from the current directory.
  * @returns The validated configuration with every path made absolute relative to the config file.
  * @throws PlugletError with kind `config-missing` or `config-invalid`.
  */
 export function loadConfig(path: string): Config {
   const abs = resolve(path)
-  if (!existsSync(abs)) throw new PlugletError('config-missing', `config file ${abs} does not exist; pass --config <file>`)
+  if (!existsSync(abs)) throw new PlugletError('config-missing', `config file ${abs} does not exist; pass --profile <file>`)
   let raw: unknown
   try {
     raw = JSON.parse(readFileSync(abs, 'utf8'))

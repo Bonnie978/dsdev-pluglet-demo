@@ -31,6 +31,24 @@ describe('pluglet bin', () => {
     expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'ship it', done: false }])
   })
 
+  it('reads the profile named by --profile', () => {
+    const profile = ws.file('other.profile.json', '{}\n')
+    const r = pluglet(ws.root, '--profile', profile, 'add', 'via', 'flag')
+    expect(r.status).toBe(0)
+    expect(r.stdout).toBe('added 1: via flag\n')
+    expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'via flag', done: false }])
+  })
+
+  it('ignores the 0.1.0 default file name and the former --config flag', () => {
+    ws.file('pluglet.json', '{}\n')
+    const byDefault = pluglet(ws.root, 'list')
+    expect(byDefault.status).toBe(1)
+    expect(byDefault.stderr).toMatch(/pluglet\.profile\.json does not exist; pass --profile <file>/)
+    const byOldFlag = pluglet(ws.root, '--config', 'pluglet.json', 'list')
+    expect(byOldFlag.status).toBe(1)
+    expect(existsSync(join(ws.root, 'tasks.json')), 'no run may have touched the store').toBe(false)
+  })
+
   it('loads a plugin from config through the real loader', () => {
     ws.file('shout.mjs', SHOUT_PLUGIN)
     ws.config({ plugins: ['./shout.mjs'] })

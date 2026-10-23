@@ -8,6 +8,7 @@ import { join } from 'node:path'
 export interface Workspace {
   readonly root: string
   file(name: string, content: string): string
+  /** Write `body` as the default profile file `pluglet.profile.json` and return its path. */
   config(body: Record<string, unknown>): string
   dispose(): void
 }
@@ -23,7 +24,7 @@ export function makeWorkspace(): Workspace {
       return path
     },
     config(body) {
-      return this.file('pluglet.json', `${JSON.stringify(body)}\n`)
+      return this.file('pluglet.profile.json', `${JSON.stringify(body)}\n`)
     },
     dispose() {
       rmSync(root, { recursive: true, force: true })

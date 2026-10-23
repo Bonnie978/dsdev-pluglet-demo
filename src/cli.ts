@@ -13,25 +13,27 @@ import { TaskStore } from './store.ts'
 
 /** Parsed argv; defaulting is an explicit `resolve` step, never hidden in `run()`. */
 export interface Invocation {
+  /** Path of the profile (config) file, as given to `--profile` or the default `pluglet.profile.json`. */
   readonly configPath: string
   readonly command: string
   readonly args: readonly string[]
 }
 
 /**
- * Parse `pluglet [--config <file>] <command> [args...]`.
+ * Parse `pluglet [--profile <file>] <command> [args...]`. `--profile` is the only option;
+ * every other `--word` is an ordinary argument (there is no alias for the 0.1.0 `--config`).
  * @param argv - Arguments after the program name.
- * @returns The invocation with `--config` defaulted to `pluglet.json` when absent.
- * @throws PlugletError('usage') when `--config` lacks a value or no command is given.
+ * @returns The invocation with `--profile` defaulted to `pluglet.profile.json` when absent.
+ * @throws PlugletError('usage') when `--profile` lacks a value or no command is given.
  */
 export function parseArgv(argv: readonly string[]): Invocation {
-  let configPath = 'pluglet.json'
+  let configPath = 'pluglet.profile.json'
   const rest: string[] = []
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!
-    if (arg === '--config') {
+    if (arg === '--profile') {
       const value = argv[i + 1]
-      if (value === undefined) throw new PlugletError('usage', '--config requires a file path')
+      if (value === undefined) throw new PlugletError('usage', '--profile requires a file path')
       configPath = value
       i++
     } else {
@@ -39,7 +41,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
     }
   }
   const [command, ...args] = rest
-  if (command === undefined) throw new PlugletError('usage', 'usage: pluglet [--config <file>] <command> [args...]')
+  if (command === undefined) throw new PlugletError('usage', 'usage: pluglet [--profile <file>] <command> [args...]')
   return { configPath, command, args }
 }
 

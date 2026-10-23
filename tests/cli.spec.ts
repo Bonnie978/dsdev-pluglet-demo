@@ -6,15 +6,19 @@ import { PlugletError } from '../src/errors.ts'
 import { makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
 
 describe('parseArgv', () => {
-  it('defaults --config and splits command from args', () => {
-    expect(parseArgv(['add', 'a', 'b'])).toEqual({ configPath: 'pluglet.json', command: 'add', args: ['a', 'b'] })
-    expect(parseArgv(['--config', 'c.json', 'list'])).toEqual({ configPath: 'c.json', command: 'list', args: [] })
-    expect(parseArgv(['list', '--config', 'c.json'])).toMatchObject({ configPath: 'c.json', command: 'list' })
+  it('defaults --profile and splits command from args', () => {
+    expect(parseArgv(['add', 'a', 'b'])).toEqual({ configPath: 'pluglet.profile.json', command: 'add', args: ['a', 'b'] })
+    expect(parseArgv(['--profile', 'c.json', 'list'])).toEqual({ configPath: 'c.json', command: 'list', args: [] })
+    expect(parseArgv(['list', '--profile', 'c.json'])).toMatchObject({ configPath: 'c.json', command: 'list' })
+  })
+
+  it('has no alias for the former --config flag: it is an ordinary word, not an option', () => {
+    expect(parseArgv(['--config', 'c.json', 'list'])).toEqual({ configPath: 'pluglet.profile.json', command: '--config', args: ['c.json', 'list'] })
   })
 
   it('reports usage failures', () => {
-    expect(() => parseArgv([])).toThrow(PlugletError)
-    expect(() => parseArgv(['--config'])).toThrow(/requires a file path/)
+    expect(() => parseArgv([])).toThrow(/usage: pluglet \[--profile <file>\]/)
+    expect(() => parseArgv(['--profile'])).toThrow(/--profile requires a file path/)
   })
 })
 
@@ -26,16 +30,18 @@ describe('runCli (real composition through the public entry)', () => {
   it('runs core and plugin commands and verifies the store on disk', async () => {
     ws.file('shout.mjs', SHOUT_PLUGIN)
     const config = ws.config({ plugins: ['./shout.mjs'] })
-    expect(await runCli(['--config', config, 'add', 'x'])).toEqual({ kind: 'ok', lines: ['added 1: x'] })
-    expect(await runCli(['--config', config, 'shout', 'hi', 'there'])).toEqual({ kind: 'ok', lines: ['HI THERE'] })
+    expect(await runCli(['--profile', config, 'add', 'x'])).toEqual({ kind: 'ok', lines: ['added 1: x'] })
+    expect(await runCli(['--profile', config, 'shout', 'hi', 'there'])).toEqual({ kind: 'ok', lines: ['HI THERE'] })
     expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([{ id: 1, title: 'x', done: false }])
   })
 
   it('returns handled failures as results and lets defects propagate', async () => {
-    const result = await runCli(['--config', join(ws.root, 'none.json'), 'list'])
+    const result = await runCli(['--profile', join(ws.root, 'none.json'), 'list'])
     expect(result).toMatchObject({ kind: 'error', error: { kind: 'config-missing' } })
+    if (result.kind !== 'error') throw new Error('expected a handled failure')
+    expect(result.error.message).toMatch(/pass --profile <file>/)
     ws.file('defect.mjs', 'export const name = "d"; export function apply() { throw new TypeError("defect") }')
-    await expect(runCli(['--config', ws.config({ plugins: ['./defect.mjs'] }), 'list'])).rejects.toThrow(TypeError)
+    await expect(runCli(['--profile', ws.config({ plugins: ['./defect.mjs'] }), 'list'])).rejects.toThrow(TypeError)
   })
 })
 

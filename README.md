@@ -10,12 +10,12 @@
 
 ```sh
 pnpm install && pnpm run build
-node lib/bin.js --config ./pluglet.json add buy milk
-node lib/bin.js --config ./pluglet.json list
-node lib/bin.js --config ./pluglet.json help
+node lib/bin.js --profile ./pluglet.profile.json add buy milk
+node lib/bin.js --profile ./pluglet.profile.json list
+node lib/bin.js --profile ./pluglet.profile.json help
 ```
 
-配置文件（相对路径相对配置文件所在目录解析）：
+`--profile <file>` 指定配置文件（profile）；省略时读当前目录的 `pluglet.profile.json`。文件不存在时以 `config-missing` 退出 1。配置文件内容（相对路径相对配置文件所在目录解析）：
 
 ```json
 { "store": "tasks.json", "plugins": ["./plugins/shout.mjs"] }
