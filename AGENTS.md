@@ -10,6 +10,7 @@ tests/        测试，与它锻炼的模块同名
 docs/         文档（docs/AGENTS.md 定义层级）
 .agents/      Agent Note 与 skill
 scripts/      gate 与生成器
+tools/        模型可见的工具清单（见 README「给 LLM Agent 暴露工具」）
 ```
 
 ## 命令

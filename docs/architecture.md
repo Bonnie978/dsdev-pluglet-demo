@@ -43,4 +43,4 @@ argv
 
 ## 新行为放哪
 
-新命令写成插件；核心只保留 `list`/`add`/`help`。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。
+新命令写成插件；核心只保留 `list`/`add`/`help`。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。

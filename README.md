@@ -44,6 +44,20 @@ export function apply(ctx) {
 
 注册即效果：插件树释放时所有命令被移除。同名命令第二次注册抛 `duplicate-registration`。
 
+## 给 LLM Agent 暴露工具
+
+[tools/pluglet.tools.json](tools/pluglet.tools.json) 是模型可见的工具清单（MCP 风格）。顶层 `tools` 是工具定义数组，每个定义有 `name`、`description` 与 JSON Schema 形式的 `parameters`；顶层 `systemPromptSection` 是告诉 agent 何时使用这些工具的一段系统提示词，接入方原文放进系统提示词。
+
+| 工具 | 对应的 CLI 运行 |
+|---|---|
+| `pluglet_add` | `pluglet --config <config> add <title>` |
+| `pluglet_list` | `pluglet --config <config> list` |
+| `pluglet_help` | `pluglet --config <config> help` |
+
+接入方（MCP server）把一次工具调用翻译成一次 CLI 运行：退出码 0 时 stdout 的行是工具结果，非零时 stderr 的一行是错误。每个工具都有可选参数 `config`，对应 `--config`，三处定义完全一致，缺省与 CLI 相同（`pluglet.json`）。清单只覆盖核心命令：插件命令出现在 `pluglet_help` 的结果里，但不能通过这些工具调用。
+
+`tests/tools.spec.ts` 守住清单：JSON 有效；每个工具三字段齐全；每个参数有描述；两个工具的描述不共享同一句话；`systemPromptSection` 不复述任何工具或参数描述；工具集等于 `registerCoreCommands` 注册的命令，`config` 的缺省值等于 `parseArgv` 的缺省值。改核心命令或 `--config` 的缺省值时同一提交更新清单。描述的写法按 [dsdev-agent-experience](.claude/skills/dsdev-agent-experience/SKILL.md)；为什么是静态清单见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-static-tool-manifest-for-agents.md)。
+
 ## 开发
 
 见 [docs/development.md](docs/development.md)、[docs/architecture.md](docs/architecture.md)、[docs/testing.md](docs/testing.md)。Agent 遵循 [AGENTS.md](AGENTS.md)。
