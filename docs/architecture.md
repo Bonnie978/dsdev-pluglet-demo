@@ -18,6 +18,7 @@
 | `src/commands.ts` | 核心命令 `list`/`add`/`done`/`help`；命令解析 | `registerCoreCommands()`、`resolveCommand()` |
 | `src/cli.ts` | argv 解析、运行循环、退出码映射 | `runCli()`、`parseArgv()`、`exitCodeFor()` |
 | `src/bin.ts` | 进程入口，无逻辑 | `lib/bin.js` |
+| `src/index.ts` | 嵌入者（例如 MCP server）与插件作者导入的公开 API，导出列表由 `tests/index.spec.ts` 钉住（保留理由见 [Agent Note](../.agents/notes/rejected/simplification/2026-10-23-drop-library-entry-point.md)） | `lib/index.js` |
 
 ## 主流程
 

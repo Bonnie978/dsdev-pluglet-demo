@@ -1,6 +1,6 @@
 # Agent Note: 删除库入口点
 
-Status: proposed
+Status: rejected — 维护者决定保留 `src/index.ts`：MCP 工具清单的工作让嵌入成为受支持的用法
 
 ## Problem
 
