@@ -10,11 +10,12 @@ describe('TaskStore', () => {
   beforeEach(() => { ws = makeWorkspace() })
   afterEach(() => { ws.dispose() })
 
-  it('reads an absent file as no tasks and assigns sequential ids', () => {
+  it('reads an absent file as no tasks, assigns sequential ids, and lists tasks in insertion order', () => {
     const store = new TaskStore(join(ws.root, 'tasks.json'))
     expect(store.list()).toEqual([])
     expect(store.add('one')).toEqual({ id: 1, title: 'one', done: false })
     expect(store.add('two').id).toBe(2)
+    expect(store.list().map(t => t.title)).toEqual(['one', 'two'])
     // Verify the world: the file holds exactly the published state and no temp file remains.
     expect(JSON.parse(readFileSync(store.path, 'utf8'))).toHaveLength(2)
     expect(existsSync(`${store.path}.tmp`)).toBe(false)
