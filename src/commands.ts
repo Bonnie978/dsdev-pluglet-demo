@@ -7,7 +7,7 @@ import type { Command } from './plugins.ts'
 import type { Disposer, Registry } from './registry.ts'
 import type { TaskStore } from './store.ts'
 
-/** A task id as typed on the command line: one positive decimal integer. */
+/** A task id as typed on the command line: one positive decimal integer (range checked separately). */
 const TASK_ID = /^[1-9]\d*$/
 
 /**
@@ -15,14 +15,16 @@ const TASK_ID = /^[1-9]\d*$/
  * @param command - Command name, for the usage message.
  * @param args - Positional arguments after the command name.
  * @returns The task id.
- * @throws PlugletError('usage') unless exactly one positive integer is given.
+ * @throws PlugletError('usage') unless exactly one positive integer no larger than
+ *   `Number.MAX_SAFE_INTEGER` is given; a larger one would round to a different task's id.
  */
 function parseTaskId(command: string, args: readonly string[]): number {
   const [id, ...extra] = args
-  if (id === undefined || extra.length > 0 || !TASK_ID.test(id)) {
-    throw new PlugletError('usage', `usage: ${command} <id> (one positive integer task id)`)
+  const value = id !== undefined && TASK_ID.test(id) ? Number(id) : Number.NaN
+  if (extra.length > 0 || !Number.isSafeInteger(value)) {
+    throw new PlugletError('usage', `usage: ${command} <id> (one positive integer task id, at most ${Number.MAX_SAFE_INTEGER})`)
   }
-  return Number(id)
+  return value
 }
 
 /**

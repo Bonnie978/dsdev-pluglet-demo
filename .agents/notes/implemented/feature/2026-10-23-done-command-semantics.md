@@ -12,7 +12,7 @@ pluglet 在 `list` 里把 `Task.done` 渲染为 `[x]`，却没有提供设置它
 
 - **未知 id 大声失败**：`complete()` 抛出 `PlugletError('unknown-task')`，这是一个新的判别值，像 `unknown-command` 一样映射到退出码 1。文件不被触碰。消息点名该 id 并指向 `list`。
 - **已完成是幂等的成功**：`complete()` 返回 `{ task, changed: false }`，命令打印 `already done <id>: <title>`，以 0 退出，存储文件不被重写（字节相同，没有临时文件）。结果形状同时陈述两个事实（最终状态，以及本次调用是否改变了它），而不是折叠成一个值。
-- **格式错误的参数是用法错误**：`done` 要求恰好一个正十进制整数；参数缺失、多余或非整数时抛出 `PlugletError('usage')`（退出 2），在读取存储之前解析。
+- **格式错误的参数是用法错误**：`done` 要求恰好一个不大于 `Number.MAX_SAFE_INTEGER` 的正十进制整数（更大的值经 `Number()` 会舍入成另一个 id）；参数缺失、多余、非整数或超出该范围时抛出 `PlugletError('usage')`（退出 2），在读取存储之前解析。
 
 核心集合是一个待办 CLI 缺了就无法发布的任务生命周期：创建、完成、删除（[`remove`](2026-10-24-remove-command-semantics.md)）、读取、发现。其余一切仍是插件；这条分界作为持续规则由 [核心命令分界的 note](../architecture/2026-10-24-core-commands-limited-to-task-lifecycle.md) 拥有，向核心再加命令需要一条部分取代它的新 note。
 

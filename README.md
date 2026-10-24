@@ -22,8 +22,8 @@ node lib/bin.js --profile ./pluglet.profile.json help
 | 命令 | 效果 | 失败 |
 |---|---|---|
 | `add <title words...>` | 追加任务，打印 `added <id>: <title>` | 空标题 → `usage`，退出码 2 |
-| `done <id>` | 把任务标为完成，打印 `done <id>: <title>`；任务已完成时打印 `already done <id>: <title>`，不改写文件，退出码 0 | id 不存在 → `unknown-task`，退出码 1；缺少 id、非正整数或多个 id → `usage`，退出码 2 |
-| `remove <id>` | 从存储中删除任务，打印 `removed <id>: <title>`；其余任务保持原 id 与顺序，留下的 id 空位不会被后续 `add` 填补 | id 不存在 → `unknown-task`，退出码 1，文件不改写；缺少 id、非正整数或多个 id → `usage`，退出码 2 |
+| `done <id>` | 把任务标为完成，打印 `done <id>: <title>`；任务已完成时打印 `already done <id>: <title>`，不改写文件，退出码 0 | id 不存在 → `unknown-task`，退出码 1；缺少 id、非正整数、大于 `Number.MAX_SAFE_INTEGER`（9007199254740991）或多个 id → `usage`，退出码 2 |
+| `remove <id>` | 从存储中删除任务，打印 `removed <id>: <title>`；其余任务保持原 id 与顺序，留下的 id 空位不会被后续 `add` 填补 | id 不存在 → `unknown-task`，退出码 1，文件不改写；缺少 id、非正整数、大于 `Number.MAX_SAFE_INTEGER`（9007199254740991）或多个 id → `usage`，退出码 2 |
 | `list` | 按存储顺序每行 `<id> [x] <title>`，未完成为 `[ ]`。`add` 追加到末尾、id 为已有最大 id 加一，`done` 与 `remove` 不改变其余任务的位置，所以只经它们写入的任务按 id 升序；插件经 `ctx.store.publish()` 写入的顺序原样保留 | — |
 | `help` | 按注册顺序列出命令与描述 | — |
 

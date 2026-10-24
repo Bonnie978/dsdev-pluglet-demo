@@ -62,13 +62,17 @@ describe('core commands', () => {
     const commands = new Registry<Command>('command')
     registerCoreCommands(commands, new TaskStore(join(ws.root, 'tasks.json')))
     const command = resolveCommand(commands, name)
-    for (const args of [[], ['abc'], ['0'], ['-1'], ['1.5'], ['1', '2']]) {
+    // 2^53 and 2^53 + 1 both round to 2^53 under Number(); accepting them would address a different task.
+    for (const args of [[], ['abc'], ['0'], ['-1'], ['1.5'], ['1', '2'], ['9007199254740992'], ['9007199254740993']]) {
       let caught: unknown
       try { command.run(args) } catch (error) { caught = error }
       expect(caught, `args ${JSON.stringify(args)}`).toBeInstanceOf(PlugletError)
       expect((caught as PlugletError).kind, `args ${JSON.stringify(args)}`).toBe('usage')
-      expect((caught as PlugletError).message, `args ${JSON.stringify(args)}`).toBe(`usage: ${name} <id> (one positive integer task id)`)
+      expect((caught as PlugletError).message, `args ${JSON.stringify(args)}`).toBe(`usage: ${name} <id> (one positive integer task id, at most ${Number.MAX_SAFE_INTEGER})`)
     }
+    let largest: unknown
+    try { command.run([String(Number.MAX_SAFE_INTEGER)]) } catch (error) { largest = error }
+    expect((largest as PlugletError).kind, 'the largest safe id reaches the store').toBe('unknown-task')
   })
 
   it('names the available commands when the command is unknown', () => {

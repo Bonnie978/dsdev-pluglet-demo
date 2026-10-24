@@ -116,9 +116,9 @@ describe('tools/pluglet.tools.json', () => {
     }
     expect(profiles[0]!.default).toBe(parseArgv(['help']).configPath)
     expect(tool('pluglet_done').parameters.required, 'done needs a task id').toEqual(['id'])
-    expect(tool('pluglet_done').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1 })
+    expect(tool('pluglet_done').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER })
     expect(tool('pluglet_remove').parameters.required, 'remove needs a task id').toEqual(['id'])
-    expect(tool('pluglet_remove').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1 })
+    expect(tool('pluglet_remove').parameters.properties.id).toMatchObject({ type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER })
   })
 })
 
