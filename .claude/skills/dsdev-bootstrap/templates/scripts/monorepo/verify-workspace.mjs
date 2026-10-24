@@ -9,7 +9,8 @@
  * - Every declared tier script enables `--experimental-test-coverage` (without it Node ignores the
  *   threshold flags and the tier passes with any coverage) and enforces `--test-coverage-lines=100`
  *   and `--test-coverage-branches=100`.
- * - Workspace dependencies use the `workspace:` protocol and are mirrored in the package
+ * - Workspace packages listed in `dependencies`, `devDependencies` or `optionalDependencies` use
+ *   the `workspace:` protocol; every `workspace:` dependency is mirrored in the package
  *   `tsconfig.json` `references`; the root `tsconfig.json` references every package.
  */
 import { existsSync, readFileSync } from 'node:fs'
@@ -18,6 +19,8 @@ import { resolveRoot } from './lib/repo-files.mjs'
 import { TIERS, workspacePackages } from './lib/workspace.mjs'
 
 const root = resolveRoot(import.meta.url)
+/** Fields whose workspace-package entries must use `workspace:`; `peerDependencies` ranges are not checked. */
+const PROTOCOL_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies']
 const errors = []
 const readJson = (rel) => {
   try { return JSON.parse(readFileSync(join(root, rel), 'utf8')) } catch (error) { errors.push(`${rel}: ${error.code === 'ENOENT' ? 'missing' : error.message}`); return null }
@@ -45,8 +48,7 @@ for (const p of packages) {
       if (!scripts[`test:${t}`].includes(flag)) errors.push(`${at}/package.json: scripts["test:${t}"] lacks ${flag}`)
     }
   }
-  const deps = { ...p.manifest.dependencies, ...p.manifest.devDependencies }
-  for (const [name, range] of Object.entries(deps)) {
+  for (const [name, range] of PROTOCOL_FIELDS.flatMap(field => Object.entries(p.manifest[field] ?? {}))) {
     if (byName.has(name) && !String(range).startsWith('workspace:')) errors.push(`${at}/package.json: workspace dependency ${name} must use the workspace: protocol, got ${JSON.stringify(range)}`)
   }
   const own = refs(readJson(`${at}/tsconfig.json`), at)

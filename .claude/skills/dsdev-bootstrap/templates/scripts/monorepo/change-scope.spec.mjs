@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fixture, runGate } from './lib/gate-test-support.mjs'
 
@@ -57,6 +57,23 @@ test('a rename across packages, committed or staged, selects the source package 
       ['@x/a', ['changed src/index.mjs']],
       ['@x/b', ['changed src/index.mjs', 'depends on @x/a']],
       ['@x/c', ['changed src/b.mjs', 'changed src/index.mjs', 'depends on @x/a', 'depends on @x/b']],
+    ])
+  } finally { f.dispose() }
+})
+
+test('optionalDependencies are workspace edges; a field that does not use workspace: never hides one that does', () => {
+  const f = workspace()
+  try {
+    mkdirSync(join(f.root, 'packages/d')); mkdirSync(join(f.root, 'packages/e'))
+    writeFileSync(join(f.root, 'packages/d/package.json'), JSON.stringify({ name: '@x/d', optionalDependencies: { '@x/a': 'workspace:*' }, scripts: { 'test:coverage': COV } }))
+    writeFileSync(join(f.root, 'packages/e/package.json'), JSON.stringify({ name: '@x/e', dependencies: { '@x/a': 'workspace:*' }, peerDependencies: { '@x/a': '^0.1.0' }, scripts: { 'test:coverage': COV } }))
+    git(f.root, 'add', '-A')
+    git(f.root, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'consumers')
+    writeFileSync(join(f.root, 'packages/a/src/index.mjs'), 'export const a = 2\n')
+    const s = scope(f.root)
+    assert.deepEqual(s.packages.map(p => [p.name, p.why]), [
+      ['@x/a', ['changed src/index.mjs']], ['@x/b', ['depends on @x/a']], ['@x/c', ['depends on @x/a']],
+      ['@x/d', ['depends on @x/a']], ['@x/e', ['depends on @x/a']],
     ])
   } finally { f.dispose() }
 })

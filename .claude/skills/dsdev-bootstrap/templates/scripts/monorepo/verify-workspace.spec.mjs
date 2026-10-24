@@ -52,6 +52,15 @@ test('a non-workspace range for a workspace package and a root tsconfig gap are 
   } finally { f.dispose() }
 })
 
+test('a non-workspace range in optionalDependencies is named, and an optional workspace dependency needs a tsconfig reference', () => {
+  const files = valid()
+  files['packages/b/package.json'] = pkg('@x/b', { optionalDependencies: { '@x/a': '^0.1.0' } })
+  const f = fixture(files)
+  try { const r = runGate('verify-workspace.mjs', f.root); assert.equal(r.status, 1); assert.match(r.out, /packages\/b\/package\.json: workspace dependency @x\/a must use the workspace: protocol, got "\^0\.1\.0"/) } finally { f.dispose() }
+  const g = fixture({ ...valid(), 'packages/b/package.json': pkg('@x/b', { optionalDependencies: { '@x/a': 'workspace:*' } }), 'packages/b/tsconfig.json': '{}' })
+  try { const r = runGate('verify-workspace.mjs', g.root); assert.equal(r.status, 1); assert.match(r.out, /packages\/b\/tsconfig\.json: references lacks packages\/a \(workspace dependency @x\/a\)/) } finally { g.dispose() }
+})
+
 test('an unsupported workspace glob fails instead of matching nothing', () => {
   const f = fixture({ ...valid(), 'pnpm-workspace.yaml': 'packages:\n  - "packages/**"\n' })
   try { const r = runGate('verify-workspace.mjs', f.root); assert.equal(r.status, 1); assert.match(r.out, /unsupported pnpm-workspace\.yaml glob "packages\/\*\*"/) } finally { f.dispose() }
