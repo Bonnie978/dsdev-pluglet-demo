@@ -1,6 +1,6 @@
 # 通用防御模式
 
-每条是实际在此类项目里出过或差点出的缺陷类，写成防止其重现的规则。写生命周期、并发、子进程、拆卸代码前读。
+每条写成防止一类缺陷重现的规则。最后一条（校验先判类别再探测字段）是本仓库真实逃逸过的缺陷（[postmortem 0001](../postmortem/0001-default-exported-function-passes-plugin-validation.md)）；其余条目是从 DeepSeek Harness 借来的种子，按 pluglet 的插件加载、注册与子进程测试保留。写生命周期、并发、子进程、拆卸代码前读。
 
 ## 独立报告正交的结果
 

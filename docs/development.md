@@ -15,8 +15,8 @@ pnpm run typecheck
 
 ```sh
 pnpm test                 # 单元 + 期望输出（源码平面）
-pnpm run test:coverage    # CI 覆盖率门：src 按文件 100%
-pnpm run test:e2e         # 先 build，再用 node 跑 lib/bin.js 的真实入口测试
+pnpm run test:coverage    # 覆盖率门：src 按文件 100%（check-all 的 coverage gate，CI 跑）
+pnpm run test:e2e         # 先 build，再用 node 跑 lib/bin.js 的真实入口测试（check-all 的 e2e gate，CI 跑）
 DSDEV_SNAPSHOT=refresh pnpm test tests/expected   # 有意刷新期望输出，审查 diff
 ```
 

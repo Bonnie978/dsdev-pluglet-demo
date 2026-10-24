@@ -5,7 +5,7 @@ pluglet 的 Agent 常备命令。改核心模块前读 [docs/architecture.md](do
 ## 仓库布局
 
 ```text
-src/          源码（按模块分目录，模块 README 是该模块的契约）
+src/          源码（平铺的 .ts 模块；每个模块的契约在它的 JSDoc，总览在 docs/architecture.md）
 tests/        测试，与它锻炼的模块同名
 docs/         文档（docs/AGENTS.md 定义层级）
 .agents/      Agent Note（.agents/notes）

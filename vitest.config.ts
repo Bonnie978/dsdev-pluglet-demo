@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 // Unit and expected-output tiers resolve `src` directly (source plane); built `lib/`
-// is consumed only by the e2e config. Coverage is the CI gate: per-file 100% on src.
+// is consumed only by the e2e config. Coverage is the gate (check-all's `coverage`, run by CI): per-file 100% on src.
 export default defineConfig({
   test: {
     include: ['tests/**/*.spec.ts'],

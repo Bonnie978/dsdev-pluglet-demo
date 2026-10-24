@@ -19,7 +19,8 @@ export const gates = [
   { id: 'lockfile', label: 'verify-lockfile', ...node('verify-lockfile') },
   { id: 'typecheck', label: 'typecheck', command: 'pnpm', args: ['run', '--silent', 'typecheck'] },
   { id: 'export-jsdoc', label: 'verify-export-jsdoc', ...node('verify-export-jsdoc'), quick: true },
-  { id: 'test', label: 'unit tests', command: 'pnpm', args: ['run', '--silent', 'test'] },
+  { id: 'coverage', label: 'unit tests + per-file coverage', command: 'pnpm', args: ['run', '--silent', 'test:coverage'], needs: ['typecheck'] },
+  { id: 'e2e', label: 'real entry path e2e', command: 'pnpm', args: ['run', '--silent', 'test:e2e'], needs: ['typecheck'] },
 ]
 
 const quick = gates.filter(g => g.quick).map(g => g.id)

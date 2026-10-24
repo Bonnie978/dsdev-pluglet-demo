@@ -90,8 +90,11 @@ install-hooks: ; node scripts/install-hooks.mjs
 ```js
 { id: 'export-jsdoc', label: 'verify-export-jsdoc', ...node('verify-export-jsdoc'), quick: true }, // 无需构建，进 doc-quick
 { id: 'typecheck', label: 'typecheck', command: 'pnpm', args: ['run', '--silent', 'typecheck'] },
-{ id: 'unit', label: 'unit tests', command: 'pnpm', args: ['run', '--silent', 'test'], needs: ['typecheck'] },
+{ id: 'coverage', label: 'unit tests + per-file coverage', command: 'pnpm', args: ['run', '--silent', 'test:coverage'], needs: ['typecheck'] },
+{ id: 'e2e', label: 'real entry path e2e', command: 'pnpm', args: ['run', '--silent', 'test:e2e'], needs: ['typecheck'] },
 ```
+
+把**每一个**测试层都登记进 `check-all`：CI 跑的是 `check-all`，不在里面的层 CI 永远不跑。覆盖率门登记 `test:coverage` 而不是 `test`（覆盖率才是门）；有可执行入口的仓库登记真实入口 e2e。写进 testing.md 或 AGENTS.md 的"CI 执行 X"必须对应 gates.config 里一个真实条目——接入后用一个负向对照证明：把 bin 的退出码改成恒为 0，`check-all` 必须变红。
 
 `doc-sync` 默认等于 `doc-quick`；有需要构建产物的文档 gate（例如编译文档里的代码块）时才往 `doc-sync` 里加，没有就保留这个别名，让 skill 与 CI 用同一个名字。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
 
@@ -131,7 +134,8 @@ node scripts/run-gates.mjs doc-quick          # 应全绿
 | verify-export-jsdoc | 删掉一个导出的 JSDoc |
 | verify-lockfile | 改 package.json 一个依赖的版本范围 |
 | gate-selftest | 把某个 verify 脚本**失败路径**的 `process.exit(1)` 改成 `process.exit(0)`（成功路径本来就有一处 `exit(0)`，别改错） |
-| typecheck / lint / unit | 一个类型错误 / 一个未用 import / 改一个期望值 |
+| typecheck / lint / coverage | 一个类型错误 / 一个未用 import / 加一条没有测试的分支 |
+| e2e | 把 bin 的退出码改成恒为 0（`check-all` 必须变红，否则真实入口层没进 CI） |
 
 没登记的 gate（例如占位的 lint）不做对照，在 PR 里注明。没有远端时 pre-push 钩子直接执行 `.git/hooks/pre-push`：先注入一个类型错误看它退出非零，再还原看它退出 0。把观察到的命令与输出写进 PR 的 Testing/Proof。
 
