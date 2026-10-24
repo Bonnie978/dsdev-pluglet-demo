@@ -28,6 +28,7 @@ templates/docs/upgrade-guide/.gitkeep   → docs/upgrade-guide/
 templates/notes/.                       → .agents/notes/（README.md、AGENTS.md、implemented/AGENTS.md、archived/AGENTS.md 与六个 class 目录；用 `cp -R templates/notes/. .agents/notes/` 才会带上 .gitkeep）
 templates/github/*                      → .github/（pull_request_template.md、ISSUE_TEMPLATE/、workflows/dsdev-gates.yml）
 templates/scripts/*                     → scripts/（gate 脚本、每个 gate 的 `*.spec.mjs` 自测、gates.config.mjs、doc-budgets.manifest.json、install-hooks.mjs）
+                                          `verify-py-layout.*` 只给 Python 仓库；`verify-lockfile.*`、`verify-export-jsdoc.*` 只给 Node 仓库，不适用的别复制
                                           自测与脚本同住 scripts/（像 DS 的 scripts/*.spec.ts），由 `gate-selftest` gate 用 `node --test 'scripts/*.spec.mjs'` 运行，零依赖，不进你的业务测试目录
 ```
 
@@ -53,6 +54,10 @@ Node 项目在 `package.json` 加：
     "verify-md-links": "node scripts/verify-md-links.mjs",
     "verify-postmortems": "node scripts/verify-postmortems.mjs",
     "verify-upgrade-guides": "node scripts/verify-upgrade-guides.mjs",
+    "verify-archived-agent-notes": "node scripts/verify-archived-agent-notes.mjs",
+    "verify-repository-references": "node scripts/verify-repository-references.mjs",
+    "verify-export-jsdoc": "node scripts/verify-export-jsdoc.mjs",
+    "verify-lockfile": "node scripts/verify-lockfile.mjs",
     "postinstall": "node scripts/install-hooks.mjs"
   }
 }
@@ -80,17 +85,25 @@ install-hooks: ; node scripts/install-hooks.mjs
 
 `.gitignore` 里构建输出用锚定的 `/lib/`、`/dist/`，不要写 `lib/`：后者会把 `scripts/lib/` 一起忽略，新 checkout 的 gate 会因缺共享库而崩。
 
-`scripts/gates.config.mjs` 登记 gate 与聚合；语言特有的 gate（typecheck、lint、export-jsdoc、unit tests）在这里追加并标 `needs`。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
+`scripts/gates.config.mjs` 登记 gate 与聚合；语言特有的 gate 在这里追加。Node 仓库的典型条目：
+
+```js
+{ id: 'export-jsdoc', label: 'verify-export-jsdoc', ...node('verify-export-jsdoc'), quick: true }, // 无需构建，进 doc-quick
+{ id: 'typecheck', label: 'typecheck', command: 'pnpm', args: ['run', '--silent', 'typecheck'] },
+{ id: 'unit', label: 'unit tests', command: 'pnpm', args: ['run', '--silent', 'test'], needs: ['typecheck'] },
+```
+
+`doc-sync` 默认等于 `doc-quick`；有需要构建产物的文档 gate（例如编译文档里的代码块）时才往 `doc-sync` 里加，没有就保留这个别名，让 skill 与 CI 用同一个名字。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
 
 `verify-doc-budgets --list` 显示每个常备文档的当前用量，填 AGENTS.md 时随手看。文档 gate 的遍历器只跳过**根目录**的 `lib/`、`dist/`、`build/`（构建输出）以及任何层级的 `node_modules`、`vendor`、缓存目录；源码放在 `src/lib/` 的仓库不受影响。`verify-export-jsdoc` 默认检查 `src/` 下的 `.ts/.tsx/.mts/.js/.mjs`；源码不在 `src/` 的仓库改脚本顶部的 `SRC` 判定。`verify-doc-budgets` 把每个 CJK 字符算一词，中文 AGENTS.md 不会"免费"。写 `.mjs` 的头注释时注意 `src/**/*.mjs` 里的 `*/` 会提前结束注释块。
 
 ## 3b. 接 CI
 
-`templates/github/workflows/dsdev-gates.yml` 在每个 PR 上跑 `doc-quick`、`hygiene`、`check-all` 三个聚合（替换 `{{PKG_MANAGER}}`；非 Node 仓库改成 Makefile 目标）。方法的分工是"本地只跑相关检查、CI 跑全量"，没有 CI 这句话就是假的：仓库不在 GitHub 或暂时不接 CI 时，把 AGENTS.md 模板里"全量聚合由 CI 在每个 PR 上跑"改成真话（例如"尚无 CI；合并前由评审者本地跑 `check-all`"），并在 Agent Note 记录接入条件。
+`templates/github/workflows/dsdev-gates.yml` 在每个 PR 上跑 `doc-quick`、`hygiene`、`check-all` 三个聚合（替换 `{{PKG_MANAGER}}`；非 Node 仓库改成 Makefile 目标）。Node 仓库在 package.json 里写 `"packageManager": "pnpm@<version>"`，否则 `corepack enable` 不能稳定选中包管理器。方法的分工是"本地只跑相关检查、CI 跑全量"，没有 CI 这句话就是假的：仓库不在 GitHub 或暂时不接 CI 时，把 AGENTS.md 模板里"全量聚合由 CI 在每个 PR 上跑"改成真话（例如"尚无 CI；合并前由评审者本地跑 `check-all`"），并在 Agent Note 记录接入条件。
 
 ## 4. 填充根 AGENTS.md
 
-只放 Agent 每次会话都需要的常备命令：仓库布局、命令、约定（每条 1–3 行 + 链接其家）、"相关检查而非全量"、文档与代码同 PR、Agent Note 何时写。模板的"约定"分两组："方法约定"保留；"项目约定"是插件式架构的示例，整组替换成本仓库真实的规则（单函数库可能只剩一两条），不要让一条对本仓库为假的约定留在文件里。`docs/testing.md` 模板同理："方法要求"保留，"本仓库现状"按实际填，没有的层写"无（原因）"。字数预算默认 2080 词，写进 `scripts/doc-budgets.manifest.json`。项目特有的约定（框架规则、命名）写进去，但理由链接到 Agent Note 或 defensive-patterns。
+只放 Agent 每次会话都需要的常备命令：仓库布局、命令、约定（每条 1–3 行 + 链接其家）、"相关检查而非全量"、文档与代码同 PR、Agent Note 何时写。模板的"约定"分两组："方法约定"保留；"项目约定"是插件式架构的示例，整组替换成本仓库真实的规则（单函数库可能只剩一两条），不要让一条对本仓库为假的约定留在文件里。`docs/testing.md`、`docs/AGENTS.md`、`docs/defensive-patterns/README.md` 模板同理（"每个 registry 有释放测试"、"模块 README"一层、"通过注册的扩展点扩展"都假设了插件式架构，对单函数库要删或改，"方法要求"标签不代表每句都适用）："方法要求"保留，"本仓库现状"按实际填，没有的层写"无（原因）"。字数预算默认 2080 词，写进 `scripts/doc-budgets.manifest.json`。项目特有的约定（框架规则、命名）写进去，但理由链接到 Agent Note 或 defensive-patterns。
 
 ## 5. 第一批 Agent Note 与 defensive pattern
 
@@ -117,10 +130,10 @@ node scripts/run-gates.mjs doc-quick          # 应全绿
 | verify-repository-references | 散文里写 `fixed in commit 9f8e7d6`（gate 看的是散文，行内代码不算） |
 | verify-export-jsdoc | 删掉一个导出的 JSDoc |
 | verify-lockfile | 改 package.json 一个依赖的版本范围 |
-| gate-selftest | 把某个 verify 脚本的 `process.exit(1)` 改成 `exit(0)` |
+| gate-selftest | 把某个 verify 脚本**失败路径**的 `process.exit(1)` 改成 `process.exit(0)`（成功路径本来就有一处 `exit(0)`，别改错） |
 | typecheck / lint / unit | 一个类型错误 / 一个未用 import / 改一个期望值 |
 
-把观察到的命令与输出写进 PR 的 Testing/Proof。
+没登记的 gate（例如占位的 lint）不做对照，在 PR 里注明。没有远端时 pre-push 钩子直接执行 `.git/hooks/pre-push`：先注入一个类型错误看它退出非零，再还原看它退出 0。把观察到的命令与输出写进 PR 的 Testing/Proof。
 
 安装钩子：`node scripts/install-hooks.mjs`（postinstall 只在新 checkout 触发，已有 node_modules 时包管理器会跳过它），然后故意提交一个尾随空白确认 pre-commit 拒绝。
 

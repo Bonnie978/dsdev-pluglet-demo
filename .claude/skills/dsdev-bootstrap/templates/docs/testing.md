@@ -2,7 +2,7 @@
 
 本仓库如何分层测试，以及让绿色套件有意义的规则。命令在根 [AGENTS.md](../AGENTS.md)；方法细则在 [dsdev-testing-policy](../.claude/skills/dsdev-testing-policy/SKILL.md)。
 
-## 分层（方法要求）
+## 分层（方法要求；不适用于本仓库形态的句子删掉）
 
 每层回答一个不同的问题；一个仓库按自己的形态选用，但选用的每层都要被执行。
 
