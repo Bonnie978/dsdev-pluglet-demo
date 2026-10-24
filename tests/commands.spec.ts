@@ -20,7 +20,7 @@ describe('core commands', () => {
     expect(resolveCommand(commands, 'list').run([])).toEqual(['1 [ ] buy milk'])
     store.publish([{ id: 1, title: 'buy milk', done: true }])
     expect(resolveCommand(commands, 'list').run([])).toEqual(['1 [x] buy milk'])
-    expect(resolveCommand(commands, 'help').run([]).map(l => l.split('  ')[0])).toEqual(['list', 'add', 'done', 'help'])
+    expect(resolveCommand(commands, 'help').run([]).map(l => l.split('  ')[0])).toEqual(['list', 'add', 'done', 'remove', 'help'])
     dispose()
     expect(commands.names()).toEqual([])
   })
@@ -41,16 +41,38 @@ describe('core commands', () => {
     expect((caught as PlugletError).kind).toBe('unknown-task')
   })
 
-  it('done rejects a missing, non-integer, or extra id argument as a usage failure', () => {
+  it('remove deletes a task so list omits it with the other ids unchanged; unknown id fails as unknown-task', () => {
+    const commands = new Registry<Command>('command')
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    registerCoreCommands(commands, store)
+    resolveCommand(commands, 'add').run(['buy', 'milk'])
+    resolveCommand(commands, 'add').run(['walk', 'dog'])
+    resolveCommand(commands, 'add').run(['pay', 'rent'])
+    const remove = resolveCommand(commands, 'remove')
+    expect(remove.run(['2'])).toEqual(['removed 2: walk dog'])
+    expect(resolveCommand(commands, 'list').run([])).toEqual(['1 [ ] buy milk', '3 [ ] pay rent'])
+    let caught: unknown
+    try { remove.run(['2']) } catch (error) { caught = error }
+    expect(caught).toBeInstanceOf(PlugletError)
+    expect((caught as PlugletError).kind).toBe('unknown-task')
+    expect(resolveCommand(commands, 'list').run([])).toEqual(['1 [ ] buy milk', '3 [ ] pay rent'])
+  })
+
+  it.each(['done', 'remove'])('%s rejects a missing, non-integer, or extra id argument as a usage failure naming itself', (name) => {
     const commands = new Registry<Command>('command')
     registerCoreCommands(commands, new TaskStore(join(ws.root, 'tasks.json')))
-    const done = resolveCommand(commands, 'done')
-    for (const args of [[], ['abc'], ['0'], ['-1'], ['1.5'], ['1', '2']]) {
+    const command = resolveCommand(commands, name)
+    // 2^53 and 2^53 + 1 both round to 2^53 under Number(); accepting them would address a different task.
+    for (const args of [[], ['abc'], ['0'], ['-1'], ['1.5'], ['1', '2'], ['9007199254740992'], ['9007199254740993']]) {
       let caught: unknown
-      try { done.run(args) } catch (error) { caught = error }
+      try { command.run(args) } catch (error) { caught = error }
       expect(caught, `args ${JSON.stringify(args)}`).toBeInstanceOf(PlugletError)
       expect((caught as PlugletError).kind, `args ${JSON.stringify(args)}`).toBe('usage')
+      expect((caught as PlugletError).message, `args ${JSON.stringify(args)}`).toBe(`usage: ${name} <id> (one positive integer task id, at most ${Number.MAX_SAFE_INTEGER})`)
     }
+    let largest: unknown
+    try { command.run([String(Number.MAX_SAFE_INTEGER)]) } catch (error) { largest = error }
+    expect((largest as PlugletError).kind, 'the largest safe id reaches the store').toBe('unknown-task')
   })
 
   it('names the available commands when the command is unknown', () => {

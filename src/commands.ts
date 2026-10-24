@@ -1,5 +1,5 @@
 /**
- * Core commands: `list`, `add`, `done`, `help`. Plugins add more through `ctx.commands`.
+ * Core commands: `list`, `add`, `done`, `remove`, `help`. Plugins add more through `ctx.commands`.
  * @module commands
  */
 import { PlugletError } from './errors.ts'
@@ -7,21 +7,24 @@ import type { Command } from './plugins.ts'
 import type { Disposer, Registry } from './registry.ts'
 import type { TaskStore } from './store.ts'
 
-/** A task id as typed on the command line: one positive decimal integer. */
+/** A task id as typed on the command line: one positive decimal integer (range checked separately). */
 const TASK_ID = /^[1-9]\d*$/
 
 /**
- * Parse the arguments of `done <id>`.
+ * Parse the arguments of a `<command> <id>` invocation.
+ * @param command - Command name, for the usage message.
  * @param args - Positional arguments after the command name.
  * @returns The task id.
- * @throws PlugletError('usage') unless exactly one positive integer is given.
+ * @throws PlugletError('usage') unless exactly one positive integer no larger than
+ *   `Number.MAX_SAFE_INTEGER` is given; a larger one would round to a different task's id.
  */
-function parseTaskId(args: readonly string[]): number {
+function parseTaskId(command: string, args: readonly string[]): number {
   const [id, ...extra] = args
-  if (id === undefined || extra.length > 0 || !TASK_ID.test(id)) {
-    throw new PlugletError('usage', 'usage: done <id> (one positive integer task id)')
+  const value = id !== undefined && TASK_ID.test(id) ? Number(id) : Number.NaN
+  if (extra.length > 0 || !Number.isSafeInteger(value)) {
+    throw new PlugletError('usage', `usage: ${command} <id> (one positive integer task id, at most ${Number.MAX_SAFE_INTEGER})`)
   }
-  return Number(id)
+  return value
 }
 
 /**
@@ -46,8 +49,15 @@ export function registerCoreCommands(commands: Registry<Command>, store: TaskSto
     commands.register('done', {
       description: 'Mark a task done: done <id>. Already-done tasks are reported, not failed.',
       run: (args) => {
-        const { task, changed } = store.complete(parseTaskId(args))
+        const { task, changed } = store.complete(parseTaskId('done', args))
         return [`${changed ? 'done' : 'already done'} ${task.id}: ${task.title}`]
+      },
+    }),
+    commands.register('remove', {
+      description: 'Delete a task: remove <id>. Remaining tasks keep their ids.',
+      run: (args) => {
+        const task = store.remove(parseTaskId('remove', args))
+        return [`removed ${task.id}: ${task.title}`]
       },
     }),
     commands.register('help', {

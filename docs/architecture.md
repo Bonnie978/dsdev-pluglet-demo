@@ -15,7 +15,7 @@
 | `src/config.ts` | 配置文件读取与验证；路径绝对化 | `loadConfig()` |
 | `src/store.ts` | 任务 JSON 文件；原子发布 | `TaskStore` |
 | `src/plugins.ts` | 插件模块规范化与加载；半应用树的回滚 | `loadPlugins()`、`unwrapPlugin()` |
-| `src/commands.ts` | 核心命令 `list`/`add`/`done`/`help`；命令解析 | `registerCoreCommands()`、`resolveCommand()` |
+| `src/commands.ts` | 核心命令 `list`/`add`/`done`/`remove`/`help`；命令解析 | `registerCoreCommands()`、`resolveCommand()` |
 | `src/cli.ts` | argv 解析、运行循环、退出码映射 | `runCli()`、`parseArgv()`、`exitCodeFor()` |
 | `src/bin.ts` | 进程入口，无逻辑 | `lib/bin.js` |
 | `src/index.ts` | 嵌入者（例如 MCP server）与插件作者导入的公开 API，导出列表由 `tests/index.spec.ts` 钉住（保留理由见 [Agent Note](../.agents/notes/rejected/simplification/2026-10-23-drop-library-entry-point.md)） | `lib/index.js` |
@@ -44,4 +44,4 @@ argv
 
 ## 新行为放哪
 
-核心只保留任务生命周期的基本动作 `list`/`add`/`done`/`help`（`done` 进核心的理由见 [Agent Note](../.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)）；其他新命令写成插件。向核心再加命令需要一条新的 Agent Note 部分取代[核心命令分界的 note](../.agents/notes/implemented/architecture/2026-10-24-core-commands-limited-to-task-lifecycle.md)，并说明为什么它不能是插件。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。
+核心只保留任务生命周期的基本动作 `list`/`add`/`done`/`remove`/`help`（`done` 进核心的理由见 [Agent Note](../.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)，`remove` 的见 [Agent Note](../.agents/notes/implemented/feature/2026-10-24-remove-command-semantics.md)）；其他新命令写成插件。向核心再加命令需要一条新的 Agent Note 部分取代[核心命令分界的 note](../.agents/notes/implemented/architecture/2026-10-24-core-commands-limited-to-task-lifecycle.md)，并说明为什么它不能是插件。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。

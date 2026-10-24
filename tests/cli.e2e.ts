@@ -84,6 +84,29 @@ describe('pluglet bin', () => {
     expect(usage.stderr).toMatch(/usage: done <id>/)
   })
 
+  it('remove deletes a task on disk and the remaining ids stay stable; unknown id exits 1, bad id exits 2', () => {
+    ws.config({})
+    for (const title of ['one', 'two', 'three']) expect(pluglet(ws.root, 'add', title).status).toBe(0)
+    const removed = pluglet(ws.root, 'remove', '2')
+    expect(removed.status).toBe(0)
+    expect(removed.stdout).toBe('removed 2: two\n')
+    expect(JSON.parse(readFileSync(join(ws.root, 'tasks.json'), 'utf8'))).toEqual([
+      { id: 1, title: 'one', done: false },
+      { id: 3, title: 'three', done: false },
+    ])
+    expect(pluglet(ws.root, 'list').stdout).toBe('1 [ ] one\n3 [ ] three\n')
+    const before = readFileSync(join(ws.root, 'tasks.json'))
+    const unknown = pluglet(ws.root, 'remove', '2')
+    expect(unknown.status).toBe(1)
+    expect(unknown.stdout).toBe('')
+    expect(unknown.stderr).toMatch(/no task with id 2/)
+    expect(readFileSync(join(ws.root, 'tasks.json')).equals(before)).toBe(true)
+    const usage = pluglet(ws.root, 'remove', 'abc')
+    expect(usage.status).toBe(2)
+    expect(usage.stderr).toMatch(/usage: remove <id>/)
+    expect(readFileSync(join(ws.root, 'tasks.json')).equals(before)).toBe(true)
+  })
+
   it('loads a plugin from config through the real loader', () => {
     ws.file('shout.mjs', SHOUT_PLUGIN)
     ws.config({ plugins: ['./shout.mjs'] })
