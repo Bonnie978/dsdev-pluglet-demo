@@ -60,7 +60,7 @@ Testing 只写**实际运行**的方法；交给 CI 的写"CI: <lane>"。pending
 
 依赖链 A ← B ← C 用 GitHub 官方 stack 对象与 `gh stack`，不用逐个 `gh pr merge` + `gh pr edit` 重定向模拟。本节只适用于托管在 GitHub 且启用了官方 stacked PR 的仓库；其他平台按其原生机制，没有原生机制就不做 stack，拆成顺序合并的独立 PR。
 
-- 先 `gh stack --version`；没有官方支持或跨 fork 链 → 硬停止，不退回手工模拟。
+- 先 `gh stack --version`；CLI 扩展缺失、服务端未启用、或跨 fork 链 → 硬停止，不退回手工模拟（不开 base 指向未合并分支、日后改 base 的 PR，也不把依赖 PR 的提交夹带进对 trunk 的 PR）。安装扩展属于改动用户环境，先问。硬停止时仍可在依赖分支上实现、验证、推送，并如实报告"没有 PR、没有 CI 运行"；依赖合并后再对 trunk 开普通 PR。
 - 用 GraphQL `PullRequest.stack` / `stackEntry.position` 确认成员资格；base 分支只建立预期顺序。
 - 缺成员且作者全部相同 → `gh stack link --base <trunk> <bottom> … <top>` 自底向上链接；作者不同 → 先问。永不自动解散、重排、重建已有 stack。
 - 刷新只在合并状态或规则要求时做：原生级联 rebase（`gh stack sync`，发布先于验证，必须立即按 [dsdev-pre-push-checks](../dsdev-pre-push-checks/SKILL.md) 验证每一层）或增量 merge-forward。
