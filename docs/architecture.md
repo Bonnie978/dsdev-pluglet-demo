@@ -43,4 +43,4 @@ argv
 
 ## 新行为放哪
 
-核心只保留任务生命周期的基本动作 `list`/`add`/`done`/`help`（`done` 进核心的理由见 [Agent Note](../.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)）；其他新命令写成插件。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。
+核心只保留任务生命周期的基本动作 `list`/`add`/`done`/`help`（`done` 进核心的理由见 [Agent Note](../.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)）；其他新命令写成插件。改核心命令同时更新 `tests/expected/help.expected.txt` 与 `tools/pluglet.tools.json`（[README](../README.md#给-llm-agent-暴露工具)）。改配置字段同时更新 `loadConfig` 的 `KNOWN_KEYS`、README 的配置表与相关测试。

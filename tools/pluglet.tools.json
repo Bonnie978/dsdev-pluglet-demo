@@ -1,0 +1,78 @@
+{
+  "systemPromptSection": "pluglet is the user's task list: a JSON file on disk that the user also reads and writes through the `pluglet` CLI, so what you add or complete is visible to them and what they add is visible to you. Use the pluglet_* tools whenever the user asks to record, review, count or finish their tasks, or asks which pluglet commands their profile offers. There is no tool to edit or delete a task, and a command that pluglet_help reports but these tools do not cover is something the user runs themselves.",
+  "tools": [
+    {
+      "name": "pluglet_list",
+      "description": "Return every task in id order, one per line as `<id> [x] <title>` for a done task and `<id> [ ] <title>` for an open one. Empty output means the list has no tasks.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Use the same value on every call in a conversation so all calls address one task file."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pluglet_add",
+      "description": "Append a new open task with the given title; the result states the id assigned to it, the next sequential integer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!--)",
+            "description": "Task title, stored verbatim."
+          },
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Use the same value on every call in a conversation so all calls address one task file."
+          }
+        },
+        "required": ["title"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pluglet_done",
+      "description": "Mark the task with the given id done. Marking a task that is already done succeeds and says so without changing the list; an id that no task has is an error.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Id of the task to complete, as shown by pluglet_list."
+          },
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Use the same value on every call in a conversation so all calls address one task file."
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pluglet_help",
+      "description": "Return the commands available under the profile, one per line with the command name and its description, including the commands that the profile's plugins add.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "default": "pluglet.profile.json",
+            "description": "Path to the pluglet profile file; relative paths resolve from the working directory. Use the same value on every call in a conversation so all calls address one task file."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+}
