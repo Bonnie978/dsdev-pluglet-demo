@@ -70,7 +70,7 @@ pnpm ≥ 10 只运行 `pnpm-workspace.yaml` 里 `allowBuilds: { <pkg>: true }` �
 `templates/scripts/monorepo/` 是在三包 monorepo 上由全新 agent 写成并经负向对照的版本：`workspace.mjs`（从 `pnpm-workspace.yaml` 与各包 `package.json` 发现包，未知 glob 直接报错而不是匹配为空）、`change-scope.mjs`（格式 v2：把改动映射到拥有的包及其**传递依赖者**，给出每包应跑的命令）、`verify-workspace.mjs`（每包有 README、按形态声明测试层——有 exports 的要 `test:coverage`、有 bin 的要 `test:e2e`、阈值齐全、`workspace:` 范围、tsconfig `references` 与依赖一致）及其自测。用它们替换根目录版本，并：
 
 - 根 `AGENTS.md` 只有一份，除非某个包的命令确实不同；包契约住在 `packages/<pkg>/README.md`，跨包的行为传播写在 `docs/architecture.md`。
-- 每个包声明的测试层由 `gates.config.mjs` 生成为独立 gate（如 `coverage:core`、`e2e:cli`）进 `check-all`，不要用 `pnpm -r --if-present`：忘了声明的包会被静默跳过。
+- 每个包声明的测试层由 `gates.config.mjs` 生成为独立 gate（id 用包目录，如 `coverage:packages/core`、`e2e:packages/cli`）进 `check-all`，不要用 `pnpm -r --if-present`：忘了声明的包会被静默跳过。
 - `.gitignore` 锚定到包内构建输出（`/packages/*/lib/`），不要写裸 `lib/`。
 - 升级指南的 `<version>` 用被破坏包的版本；多包同时破坏时一份指南覆盖受影响的包。
 

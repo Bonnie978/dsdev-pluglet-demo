@@ -31,7 +31,7 @@ export const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDe
  * Discover workspace packages under `root`.
  * @param {string} root - Repository root.
  * @returns {{ name: string, short: string, dir: string, manifest: Record<string, any>, workspaceDeps: string[] }[]}
- *   Packages sorted by directory; `short` is the directory basename used in gate ids,
+ *   Packages sorted by directory; `short` is the directory basename,
  *   `workspaceDeps` the names declared with the `workspace:` protocol in any of
  *   `DEPENDENCY_FIELDS`.
  */
@@ -62,7 +62,7 @@ export function workspacePackages(root) {
   })
 }
 
-/** Test tiers a package registers as package.json scripts; each one becomes a `<tier>:<short>` gate. */
+/** Test tiers a package registers as package.json scripts; each one becomes a `<tier>:<dir>` gate. */
 export const TIERS = ['coverage', 'e2e']
 
 /**

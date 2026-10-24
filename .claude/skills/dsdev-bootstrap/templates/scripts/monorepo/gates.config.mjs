@@ -3,7 +3,8 @@
  * Each gate: id, label, command, args, needs (gate ids that must pass first),
  * quick (part of the build-free doc-quick aggregate), allowFailure (observational).
  * Per-package test tiers are generated from the workspace: every `test:<tier>` script a package
- * declares (`scripts/lib/workspace.mjs` TIERS) becomes a `<tier>:<dir>` gate in check-all, so a
+ * declares (`scripts/lib/workspace.mjs` TIERS) becomes a `<tier>:<dir>` gate in check-all (`<dir>` is
+ * the package directory, such as `coverage:packages/core`, unique per package), so a
  * package that forgets to declare a tier fails `verify-workspace` instead of being skipped.
  */
 import { repoRoot } from './lib/repo-files.mjs'
@@ -13,7 +14,7 @@ const node = (script, ...args) => ({ command: 'node', args: [`scripts/${script}.
 
 const tierGates = workspacePackages(repoRoot(import.meta.url)).flatMap(p => TIERS
   .filter(t => p.manifest.scripts?.[`test:${t}`])
-  .map(t => ({ id: `${t}:${p.short}`, label: `${p.name} test:${t}`, command: 'pnpm', args: ['--filter', p.name, 'run', '--silent', `test:${t}`], needs: ['typecheck'] })))
+  .map(t => ({ id: `${t}:${p.dir}`, label: `${p.name} test:${t}`, command: 'pnpm', args: ['--filter', p.name, 'run', '--silent', `test:${t}`], needs: ['typecheck'] })))
 
 export const gates = [
   { id: 'md-wrap', label: 'verify-md-wrap', ...node('verify-md-wrap'), quick: true },
