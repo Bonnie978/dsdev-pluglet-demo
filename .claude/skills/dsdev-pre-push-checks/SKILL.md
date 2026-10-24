@@ -36,7 +36,7 @@ node scripts/change-scope.mjs --base <verified-base-ref>
 | 资源占用、异步、flaky 风险的测试 | 先按 [dsdev-testing-policy](../dsdev-testing-policy/SKILL.md) 判断是否需要恢复/负向对照/静止拆卸/并发进程证据 |
 | 真实外部 provider 行为 | 有凭据时跑对应 e2e；永不打印密钥 |
 
-不要仅因为接下来要 commit/push 就重复一个已通过的检查；尤其不要在 push 前手动跑一遍 pre-push 钩子已经会跑的类型检查。
+不要仅因为接下来要 commit/push 就重复一个已通过的检查；尤其不要在 push 前手动跑一遍 pre-push 钩子已经会跑的类型检查——除非没有远端、钩子根本不会触发，那时手动跑一次。
 
 过滤测试时检查报告的"选中测试数"再把它当聚焦证据；参数透传语法按各启动器的规则，别让一个多余的 `--` 把过滤器吃掉。
 
