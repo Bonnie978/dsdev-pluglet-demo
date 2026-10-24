@@ -5,7 +5,7 @@
 ## 分层
 
 - **Unit**（`pnpm test`）：按模块的行为测试，与它锻炼的模块同住；每个 registry 有释放安全测试。
-- **Coverage gate**：按文件 100% 行覆盖，登记为 `check-all` 的 `coverage` gate，CI 每个 PR 执行；未覆盖行多半是该删的死代码。行覆盖必要而不充分。
+- **Coverage gate**：按文件 100% 行、分支、函数、语句覆盖，登记为 `check-all` 的 `coverage` gate，CI 每个 PR 执行；未覆盖行多半是该删的死代码。行覆盖必要而不充分。
 - **真实入口 e2e**：通过构建后的 bin/CLI/进程启动，断言外部可观察结果；登记为 `check-all` 的 `e2e` gate。
 - **期望输出 / 快照**：用户或模型可见的非平凡变更在同 PR 更新期望输出。
 

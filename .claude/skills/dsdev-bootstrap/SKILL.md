@@ -136,6 +136,7 @@ node scripts/run-gates.mjs doc-quick          # 应全绿
 | gate-selftest | 把某个 verify 脚本**失败路径**的 `process.exit(1)` 改成 `process.exit(0)`（成功路径本来就有一处 `exit(0)`，别改错） |
 | typecheck / lint / coverage | 一个类型错误 / 一个未用 import / 加一条没有测试的分支 |
 | e2e | 把 bin 的退出码改成恒为 0（`check-all` 必须变红，否则真实入口层没进 CI） |
+| e2e（每种入口模式） | 让某一种入口模式（例如 stdin）返回空结果；`check-all` 必须变红，否则该模式没有被守住 |
 
 没登记的 gate（例如占位的 lint）不做对照，在 PR 里注明。没有远端时 pre-push 钩子直接执行 `.git/hooks/pre-push`：先注入一个类型错误看它退出非零，再还原看它退出 0。把观察到的命令与输出写进 PR 的 Testing/Proof。
 

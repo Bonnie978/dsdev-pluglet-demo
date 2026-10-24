@@ -42,5 +42,6 @@
     "@vitest/coverage-v8": "^3.2.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
-  }
+  },
+  "packageManager": "pnpm@11.4.0"
 }

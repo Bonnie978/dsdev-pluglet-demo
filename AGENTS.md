@@ -20,7 +20,10 @@ tools/        模型可见的工具清单（见 README「给 LLM Agent 暴露工
 pnpm install
 pnpm test                 # 单元测试
 pnpm run typecheck            # 类型检查
-pnpm run lint                 # lint
+pnpm run lint                 # verify-export-jsdoc（导出必须有 JSDoc）
+pnpm run test:coverage        # 单元测试 + 按文件 100% 覆盖（check-all 的 coverage gate）
+pnpm run test:e2e             # 构建后用 node 跑 lib/bin.js（check-all 的 e2e gate）
+pnpm run check:all            # CI 在每个 PR 上跑的全部 gate
 pnpm run test:docs    # 无需构建的文档 gate（doc-quick 聚合）
 pnpm run doc-sync     # 全部文档 gate
 pnpm run hygiene      # 包/依赖/发布布局检查

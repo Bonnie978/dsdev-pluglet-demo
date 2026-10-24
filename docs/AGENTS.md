@@ -19,12 +19,12 @@
 | [defensive-patterns/](defensive-patterns/README.md) | review 执行的规则，按工件分页 | 类型定义、决策理由 |
 | [postmortem/](postmortem/README.md) | 事故故事——唯一允许叙事的层 | — |
 | [cookbook/](cookbook/README.md) | 带编号验证步骤的 how-to | 设计理由 |
-| 模块 README | 模块契约：配置、语义、限制、扩展点 | JSDoc 复述、别的模块的事 |
+| 模块 JSDoc | 模块契约：配置、语义、限制、扩展点（本仓库没有模块 README） | 别的模块的事 |
 | [development.md](development.md) | 贡献者环境、日常流程、CI 概要 | 版本理由、会漂移的逐项清单 |
 | [upgrade-guide/](upgrade-guide/) | 外部可感知破坏的迁移步骤 | 内部 API 变更 |
 | skills | 可复用工作流与决策标准 | 产品与运行时契约 |
 
-放置：bug → postmortem；理由 → Agent Note；流程 → cookbook；模块契约 → README；常备命令 → 根 AGENTS.md 加理由链接；review 执行的规则 → defensive-patterns。
+放置：bug → postmortem；理由 → Agent Note；流程 → cookbook；模块契约 → 模块 JSDoc；常备命令 → 根 AGENTS.md 加理由链接；review 执行的规则 → defensive-patterns。
 
 ## 写作规则
 
