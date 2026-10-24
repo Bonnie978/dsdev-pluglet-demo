@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { parseArgv } from '../src/cli.ts'
+import { join } from 'node:path'
+import { parseArgv, runCli } from '../src/cli.ts'
 import { registerCoreCommands } from '../src/commands.ts'
 import type { Command } from '../src/plugins.ts'
 import { Registry } from '../src/registry.ts'
 import { TaskStore } from '../src/store.ts'
+import { makeWorkspace, SHOUT_PLUGIN, type Workspace } from './harness.ts'
 
 // The manifest is model-visible text (README § 给 LLM Agent 暴露工具). Its rules are checked by a
 // pure validator so the real file and hand-built invalid manifests run through the same code.
@@ -148,5 +150,44 @@ describe('manifest validator (rejected cases)', () => {
     expect(mutated(m => { m.systemPromptSection = String(tool('pluglet_add').parameters.properties.title!.description) }))
       .toContainEqual(expect.stringMatching(/^systemPromptSection: restates a parameter description: /))
     expect(mutated(m => { m.systemPromptSection = ' ' })).toContain('systemPromptSection: missing or empty')
+  })
+})
+
+// The descriptions make claims about what a call returns; a real run through `runCli` with the
+// README's argv mapping keeps them from drifting when commands.ts changes.
+describe('manifest claims against the real CLI', () => {
+  let ws: Workspace
+  beforeEach(() => { ws = makeWorkspace() })
+  afterEach(() => { ws.dispose() })
+
+  /** Run the README mapping for `name` (`pluglet --profile <profile> <command> [args...]`) and return its lines. */
+  async function call(name: string, profile: string, ...args: string[]) {
+    const result = await runCli(['--profile', profile, name.replace(/^pluglet_/, ''), ...args])
+    if (result.kind !== 'ok') throw result.error
+    return result.lines
+  }
+
+  it('list legend, add result, done idempotence and help lines hold as described', async () => {
+    ws.file('shout.mjs', SHOUT_PLUGIN)
+    const profile = ws.config({ plugins: ['./shout.mjs'] })
+    const store = join(ws.root, 'tasks.json')
+    expect(await call('pluglet_list', profile), 'empty output means no tasks').toEqual([])
+    const added = await call('pluglet_add', profile, 'buy milk')
+    expect(added, 'the result states the assigned id').toEqual([expect.stringMatching(/\b1\b/)])
+    expect(JSON.parse(readFileSync(store, 'utf8')), 'a title with spaces is one argv element, stored verbatim').toEqual([{ id: 1, title: 'buy milk', done: false }])
+    expect(await call('pluglet_list', profile)).toEqual(['1 [ ] buy milk'])
+    expect(await call('pluglet_done', profile, String(1))).toHaveLength(1)
+    expect(await call('pluglet_list', profile)).toEqual(['1 [x] buy milk'])
+    const before = readFileSync(store)
+    const again = await call('pluglet_done', profile, String(1))
+    expect(again, 'already done succeeds and says so').toEqual([expect.stringMatching(/^already done 1\b/)])
+    expect(readFileSync(store).equals(before), 'the list is unchanged').toBe(true)
+    const unknown = await runCli(['--profile', profile, 'done', '42'])
+    expect(unknown.kind === 'error' && unknown.error.kind, 'an id no task has is an error').toBe('unknown-task')
+    const help = await call('pluglet_help', profile)
+    expect(help, 'one line per command, core and plugin, with name and description').toEqual([
+      ...['list', 'add', 'done', 'help'].map(n => expect.stringMatching(new RegExp(`^${n}  \\S`))),
+      'shout  Upper-case the arguments.',
+    ])
   })
 })
