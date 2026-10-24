@@ -182,6 +182,11 @@ describe('manifest claims against the real CLI', () => {
     const again = await call('pluglet_done', profile, String(1))
     expect(again, 'already done succeeds and says so').toEqual([expect.stringMatching(/^already done 1\b/)])
     expect(readFileSync(store).equals(before), 'the list is unchanged').toBe(true)
+    const pattern = new RegExp(String(tool('pluglet_add').parameters.properties.title!.pattern ?? ''))
+    for (const title of ['--urgent fix', 'a --b', '-x']) {
+      const run = await runCli(['--profile', profile, 'add', title])
+      expect(pattern.test(title), `the title schema accepts ${JSON.stringify(title)} exactly when the CLI does`).toBe(run.kind === 'ok')
+    }
     const unknown = await runCli(['--profile', profile, 'done', '42'])
     expect(unknown.kind === 'error' && unknown.error.kind, 'an id no task has is an error').toBe('unknown-task')
     const help = await call('pluglet_help', profile)

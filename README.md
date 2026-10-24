@@ -67,7 +67,7 @@ export function apply(ctx) {
 | `pluglet_done` | `pluglet --profile <profile> done <id>` |
 | `pluglet_help` | `pluglet --profile <profile> help` |
 
-接入方（MCP server）把一次工具调用翻译成一次 CLI 运行：退出码 0 时 stdout 的行是工具结果，非零时 stderr 的一行是错误。每个工具都有可选参数 `profile`，对应 `--profile`，四处定义完全一致，缺省与 CLI 相同（`pluglet.profile.json`）。清单只覆盖核心命令：插件命令出现在 `pluglet_help` 的结果里，但不能通过这些工具调用。
+接入方（MCP server）把一次工具调用翻译成一次 CLI 运行：`title` 作为一个 argv 元素传给 `add`（不按空白拆分，标题原样存储；CLI 把以 `--` 开头的参数当未知选项拒绝，所以 schema 用 `pattern` 排除这种标题），`id` 转成十进制字符串；退出码 0 时 stdout 的行是工具结果，非零时 stderr 的一行是错误。每个工具都有可选参数 `profile`，对应 `--profile`，四处定义完全一致，缺省与 CLI 相同（`pluglet.profile.json`）。清单只覆盖核心命令：插件命令出现在 `pluglet_help` 的结果里，但不能通过这些工具调用。
 
 `tests/tools.spec.ts` 守住清单：JSON 有效；每个工具三字段齐全；每个参数有描述；两个工具的描述不共享同一句话；`systemPromptSection` 不复述任何工具或参数描述；工具集等于 `registerCoreCommands` 注册的命令，`profile` 的缺省值等于 `parseArgv` 的缺省值。改核心命令或 `--profile` 的缺省值时同一提交更新清单。描述的写法按 [dsdev-agent-experience](.claude/skills/dsdev-agent-experience/SKILL.md)；为什么是静态清单见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-static-tool-manifest-for-agents.md)。
 

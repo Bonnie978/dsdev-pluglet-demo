@@ -25,6 +25,7 @@
           "title": {
             "type": "string",
             "minLength": 1,
+            "pattern": "^(?!--)",
             "description": "Task title, stored verbatim."
           },
           "profile": {
