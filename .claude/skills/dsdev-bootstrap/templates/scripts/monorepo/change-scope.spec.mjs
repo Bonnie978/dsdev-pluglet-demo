@@ -43,6 +43,24 @@ test('a source change in a leaf dependency selects the owner and every transitiv
   } finally { f.dispose() }
 })
 
+test('a rename across packages, committed or staged, selects the source package as well as the destination', () => {
+  const f = workspace()
+  try {
+    git(f.root, 'checkout', '-qb', 'work')
+    git(f.root, 'mv', 'packages/a/src/index.mjs', 'packages/c/src/index.mjs')
+    git(f.root, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'move')
+    git(f.root, 'mv', 'packages/b/src/index.mjs', 'packages/c/src/b.mjs')
+    const s = scope(f.root)
+    assert.deepEqual(s.paths.committed, ['packages/a/src/index.mjs', 'packages/c/src/index.mjs'])
+    assert.deepEqual(s.paths.staged, ['packages/b/src/index.mjs', 'packages/c/src/b.mjs'])
+    assert.deepEqual(s.packages.map(p => [p.name, p.why]), [
+      ['@x/a', ['changed src/index.mjs']],
+      ['@x/b', ['changed src/index.mjs', 'depends on @x/a']],
+      ['@x/c', ['changed src/b.mjs', 'changed src/index.mjs', 'depends on @x/a', 'depends on @x/b']],
+    ])
+  } finally { f.dispose() }
+})
+
 test('a test-only change selects only the owning package; a README selects only the doc gates', () => {
   const f = workspace()
   try {

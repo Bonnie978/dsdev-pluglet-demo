@@ -6,7 +6,8 @@
  *
  * The command never guesses or fetches a base: supply the ref you verified from the
  * live PR or stack state. Committed paths are relative to the merge base of base and
- * head; staged, unstaged and untracked paths describe the current worktree.
+ * head; staged, unstaged and untracked paths describe the current worktree. Rename detection
+ * is off, so a renamed file reports both its source and its destination path.
  *
  * `packages` lists each affected workspace package with why it is affected and the tier
  * commands it declares: a changed `src/` or `package.json` affects the owning package and every
@@ -84,9 +85,9 @@ try {
   const headSha = git(['rev-parse', '--verify', `${opts.head}^{commit}`], `cannot resolve head ref ${JSON.stringify(opts.head)}`).trim()
   const mergeBaseSha = git(['merge-base', baseSha, headSha], 'no merge base').trim()
   const paths = {
-    committed: lines(git(['diff', '--name-only', mergeBaseSha, headSha], 'committed diff')),
-    staged: lines(git(['diff', '--cached', '--name-only'], 'staged diff')),
-    unstaged: lines(git(['diff', '--name-only'], 'unstaged diff')),
+    committed: lines(git(['diff', '--name-only', '--no-renames', mergeBaseSha, headSha], 'committed diff')),
+    staged: lines(git(['diff', '--cached', '--name-only', '--no-renames'], 'staged diff')),
+    unstaged: lines(git(['diff', '--name-only', '--no-renames'], 'unstaged diff')),
     untracked: lines(git(['ls-files', '--others', '--exclude-standard'], 'untracked files')),
   }
   const all = [...new Set(Object.values(paths).flat())].sort()
