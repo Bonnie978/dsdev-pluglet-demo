@@ -21,6 +21,14 @@ describe('TaskStore', () => {
     expect(existsSync(`${store.path}.tmp`)).toBe(false)
   })
 
+  it('lists a published array in publish order and appends the next id after the highest one', () => {
+    const store = new TaskStore(join(ws.root, 'tasks.json'))
+    store.publish([{ id: 3, title: 'c', done: false }, { id: 1, title: 'a', done: true }])
+    expect(store.list().map(t => t.id)).toEqual([3, 1])
+    expect(store.add('d').id).toBe(4)
+    expect(store.list().map(t => t.id)).toEqual([3, 1, 4])
+  })
+
   it('rejects an empty title as a usage failure without touching the file', () => {
     const store = new TaskStore(join(ws.root, 'tasks.json'))
     expect(() => store.add('   ')).toThrow(PlugletError)

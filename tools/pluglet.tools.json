@@ -3,7 +3,7 @@
   "tools": [
     {
       "name": "pluglet_list",
-      "description": "Return every task in id order, one per line as `<id> [x] <title>` for a done task and `<id> [ ] <title>` for an open one. Empty output means the list has no tasks.",
+      "description": "Return every task in the order the task file stores it (new tasks are appended), one per line as `<id> [x] <title>` for a done task and `<id> [ ] <title>` for an open one. Empty output means the list has no tasks.",
       "parameters": {
         "type": "object",
         "properties": {

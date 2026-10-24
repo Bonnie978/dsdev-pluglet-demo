@@ -22,10 +22,10 @@ node lib/bin.js --profile ./pluglet.profile.json help
 |---|---|---|
 | `add <title words...>` | 追加任务，打印 `added <id>: <title>` | 空标题 → `usage`，退出码 2 |
 | `done <id>` | 把任务标为完成，打印 `done <id>: <title>`；任务已完成时打印 `already done <id>: <title>`，不改写文件，退出码 0 | id 不存在 → `unknown-task`，退出码 1；缺少 id、非正整数或多个 id → `usage`，退出码 2 |
-| `list` | 按添加顺序（即 id 升序）每行 `<id> [x] <title>`，未完成为 `[ ]`；`done` 不改变任务位置 | — |
+| `list` | 按存储顺序每行 `<id> [x] <title>`，未完成为 `[ ]`。`add` 追加到末尾、id 为已有最大 id 加一，`done` 不改变任务位置，所以只经它们写入的任务按 id 升序；插件经 `ctx.store.publish()` 写入的顺序原样保留 | — |
 | `help` | 按注册顺序列出命令与描述 | — |
 
-`list` 的添加顺序保证由 [tests/store.spec.ts](tests/store.spec.ts) 的 insertion order 用例固定。
+`list` 的顺序由 [tests/store.spec.ts](tests/store.spec.ts) 的 insertion order 与 publish order 用例固定。
 
 `done` 的取舍见 [Agent Note](.agents/notes/implemented/feature/2026-10-23-done-command-semantics.md)。
 
