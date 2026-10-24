@@ -1,23 +1,23 @@
-# Agent Note: Adopt the dsdev development method
+# Agent Note: 采用 dsdev 开发方法
 
 Status: implemented
 
 ## Problem
 
-pluglet is a small repository whose changes are made mostly by agents. Without written standing orders, every session re-derives conventions from the code, decisions live only in chat transcripts, and escaped bugs produce fixes but no durable guardrails. The repository needs one place for rules an agent must keep in context, one place for decision rationale, and mechanically executed checks for everything that can be checked.
+pluglet 是一个小仓库，改动大多由 agent 完成。没有成文的常备命令时，每个会话都要从代码重新推导约定，决策只留在聊天记录里，逃逸的 bug 产出修复却没有持久的护栏。仓库需要一个地方放 agent 必须保持在上下文里的规则，一个地方放决策理由，并对一切可检查的东西做机械执行的检查。
 
 ## Decision
 
-pluglet uses the dsdev method as installed by `dsdev-bootstrap`: a root `AGENTS.md` (with `CLAUDE.md` symlinked to it) carries standing orders with links to their homes; `docs/AGENTS.md` fixes the tier taxonomy; decisions live in `.agents/notes/{lifecycle}/{class}/`; escaped bugs get a postmortem under `docs/postmortem/`; review-enforced rules live in `docs/defensive-patterns/`; `scripts/run-gates.mjs` runs the `doc-quick`, `doc-sync`, `hygiene` and `check-all` aggregates; git hooks stay narrow (staged whitespace and Markdown wrap on commit, typecheck on push). Skills are copied into `.claude/skills/` and committed with the code (version in `.claude/skills/VERSION`); upgrading replaces the whole set in one PR.
+pluglet 使用由 `dsdev-bootstrap` 安装的 dsdev 方法：根 `AGENTS.md`（`CLAUDE.md` 是指向它的符号链接）承载常备命令并链接到各自的家；`docs/AGENTS.md` 固定层级分类；决策住在 `.agents/notes/{lifecycle}/{class}/`；逃逸的 bug 在 `docs/postmortem/` 下得到一篇 postmortem；review 执行的规则住在 `docs/defensive-patterns/`；`scripts/run-gates.mjs` 运行 `doc-quick`、`doc-sync`、`hygiene` 与 `check-all` 聚合；git 钩子保持很窄（commit 时查 staged 空白与 Markdown 换行，push 时跑类型检查）。skill 复制到 `.claude/skills/` 并随代码提交（版本在 `.claude/skills/VERSION`）；升级时在一个 PR 里整组替换。
 
 ## Alternatives considered
 
-- **A single CLAUDE.md with everything in it.** Rejected: one file cannot hold rules, rationale and procedures without exceeding what an agent should load every session; the tier taxonomy keeps the standing orders short and links the rest.
-- **Conventional ADRs under `docs/adr/` without lifecycle folders.** Rejected: ADRs without `proposed/implemented/rejected` folders and a format gate drift into spec-speak after shipping; the path-encoded lifecycle and `verify-agent-note-format` keep implemented notes describing present reality.
-- **No executed gates, rely on review.** Rejected: review catches judgement calls, not mechanical drift (hard-wrapped paragraphs, broken links, malformed notes); a gate that is never run is a rule that does not exist.
+- **一个装下一切的 CLAUDE.md。** 否决：一个文件装不下规则、理由和流程而不超出 agent 每次会话应加载的量；层级分类让常备命令保持简短，其余靠链接。
+- **放在 `docs/adr/` 下、没有生命周期目录的传统 ADR。** 否决：没有 `proposed/implemented/rejected` 目录和格式 gate 的 ADR 在上线后会漂移成 spec 口吻；路径编码的生命周期与 `verify-agent-note-format` 让 implemented note 持续描述当前现实。
+- **不执行 gate，只靠 review。** 否决：review 抓的是判断题，不是机械漂移（硬换行的段落、失效的链接、格式错误的 note）；从不运行的 gate 等于不存在的规则。
 
 ## Consequences
 
-- Every change carries its documentation and its evidence in the same PR; "docs later" is not an option.
-- The method costs a few minutes per change (reading rules, running `test:docs`); it buys a repository whose rules a fresh agent can learn from files alone.
-- Language-specific gates (`typecheck`, `verify-export-jsdoc`, unit tests) are registered in `scripts/gates.config.mjs`; adding one follows `dsdev-gate-authoring`, including the negative control.
+- 每个变更在同一个 PR 里带上它的文档和证据；"文档以后补"不是选项。
+- 这套方法每个变更多花几分钟（读规则、跑 `test:docs`）；换来的是一个全新 agent 仅凭文件就能学会规则的仓库。
+- 语言相关的 gate（`typecheck`、`verify-export-jsdoc`、单元测试）登记在 `scripts/gates.config.mjs`；新增一个按 `dsdev-gate-authoring` 来，包括负向对照。

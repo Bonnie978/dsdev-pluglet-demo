@@ -1,36 +1,36 @@
-# Agent Note: `done <id>` is a core command with idempotent completion
+# Agent Note: `done <id>` 是核心命令，完成操作幂等
 
 Status: implemented
 
 ## Problem
 
-pluglet rendered `Task.done` in `list` as `[x]` but offered no way to set it: a user had to write a plugin or edit `tasks.json` by hand. Issue #12 asks for a `done <id>` command. Two choices are not obvious from code alone: whether `done` belongs in the core (the architecture map said the core keeps only `list`/`add`/`help` and new commands are plugins), and what `done` does when the id does not exist or the task is already done.
+pluglet 在 `list` 里把 `Task.done` 渲染为 `[x]`，却没有提供设置它的方式：用户得写一个插件或手改 `tasks.json`。Issue #12 要求一个 `done <id>` 命令。有两个选择光看代码并不显然：`done` 是否属于核心（架构地图说核心只保留 `list`/`add`/`help`，新命令都是插件），以及 id 不存在或任务已完成时 `done` 做什么。
 
 ## Decision
 
-`done` is a core command registered by `registerCoreCommands()` between `add` and `help`, backed by `TaskStore.complete(id)`.
+`done` 是核心命令，由 `registerCoreCommands()` 注册在 `add` 与 `help` 之间，底层是 `TaskStore.complete(id)`。
 
-- **Unknown id fails loud**: `complete()` throws `PlugletError('unknown-task')`, a new discriminant mapped to exit code 1 like `unknown-command`. The file is not touched. The message names the id and points at `list`.
-- **Already done is idempotent success**: `complete()` returns `{ task, changed: false }`, the command prints `already done <id>: <title>`, exits 0, and the store file is not rewritten (byte-identical, no temp file). The result shape states both facts (final state and whether this call changed it) instead of folding them into one value.
-- **Malformed arguments are usage errors**: `done` requires exactly one positive decimal integer; a missing, extra, or non-integer argument throws `PlugletError('usage')` (exit 2), parsed before the store is read.
+- **未知 id 大声失败**：`complete()` 抛出 `PlugletError('unknown-task')`，这是一个新的判别值，像 `unknown-command` 一样映射到退出码 1。文件不被触碰。消息点名该 id 并指向 `list`。
+- **已完成是幂等的成功**：`complete()` 返回 `{ task, changed: false }`，命令打印 `already done <id>: <title>`，以 0 退出，存储文件不被重写（字节相同，没有临时文件）。结果形状同时陈述两个事实（最终状态，以及本次调用是否改变了它），而不是折叠成一个值。
+- **格式错误的参数是用法错误**：`done` 要求恰好一个正十进制整数；参数缺失、多余或非整数时抛出 `PlugletError('usage')`（退出 2），在读取存储之前解析。
 
-The core set is the task lifecycle a to-do CLI cannot ship without: create, complete, read, discover. Everything else stays a plugin.
+核心集合是一个待办 CLI 缺了就无法发布的任务生命周期：创建、完成、读取、发现。其余一切仍是插件。
 
 ## Alternatives considered
 
-- **Ship `done` as a plugin instead of core.** Rejected: plugins load only from paths in the user's config, so a "bundled" plugin would need every config to reference a path inside the package, and `list` already renders `done` state; a CLI that displays a field it cannot set is incomplete, not minimal. The core/plugin boundary is redrawn once, at the task lifecycle, and recorded here and in `docs/architecture.md`.
-- **Already done → error (exit 1).** Rejected: `done` declares a desired end state; failing when that state already holds makes re-running a script after a partial failure fail, and nothing is protected by the error (no data is lost by a repeat). The distinct `already done` wording keeps the fact visible without making it a failure.
-- **Already done → print the same `done <id>: <title>` line.** Rejected: it reports a write that did not happen; the output should state one fact per value.
-- **Unknown id → usage error (exit 2).** Rejected: the argv is well-formed; the failure is a reference to missing data, the same class as `unknown-command`. A separate `unknown-task` kind lets embedders route on it without parsing text.
-- **Accept several ids (`done 1 2 3`).** Deferred, not rejected: the issue asks for one id, and rejecting extra arguments now keeps the surface small; a later change can relax the parser without breaking single-id callers.
-- **Reuse `TaskStore.publish()` from the command instead of adding `complete()`.** Rejected: the lookup, the no-op rule and the `unknown-task` failure belong to the store that owns the file, so plugins get the same semantics through `ctx.store.complete()`.
+- **把 `done` 作为插件而不是核心发布。** 否决：插件只从用户配置里的路径加载，所以一个"内置"插件需要每份配置都引用包内的一个路径，而 `list` 已经渲染 `done` 状态；一个显示了自己无法设置的字段的 CLI 是不完整，不是极简。核心/插件的分界只重画一次，画在任务生命周期上，记录在这里和 `docs/architecture.md`。
+- **已完成 → 错误（退出 1）。** 否决：`done` 声明的是期望的最终状态；该状态已成立时失败，会让部分失败后重跑脚本也失败，而这个错误保护不了任何东西（重复执行不丢数据）。独特的 `already done` 措辞让事实保持可见，又不把它变成失败。
+- **已完成 → 打印同样的 `done <id>: <title>` 行。** 否决：它报告了一次没有发生的写入；输出应当每个值陈述一个事实。
+- **未知 id → 用法错误（退出 2）。** 否决：argv 是良构的；失败是对缺失数据的引用，与 `unknown-command` 同类。独立的 `unknown-task` 种类让嵌入者无需解析文本就能按它路由。
+- **接受多个 id（`done 1 2 3`）。** 推迟，不是否决：issue 要求一个 id，现在拒绝多余参数让面保持小；之后的变更可以放宽解析器而不破坏单 id 调用者。
+- **在命令里复用 `TaskStore.publish()` 而不是新增 `complete()`。** 否决：查找、无操作规则和 `unknown-task` 失败属于拥有文件的存储，这样插件通过 `ctx.store.complete()` 得到同样的语义。
 
 ## Consequences
 
-- `PlugletErrorKind` gains `unknown-task`; `exitCodeFor()` maps it to 1 and the exhaustive switch forces every future kind to choose an exit code. Embedders with their own exhaustive switch on the kind must add the case ([upgrade guide](../../../../docs/upgrade-guide/v0.1.0/done-core-command/guide.md)).
-- A plugin that registered its own `done` now fails at startup with `duplicate-registration`; the upgrade guide names the fix.
-- The `help` expected output and the README command table are the two homes of the user-visible wording; both change together.
+- `PlugletErrorKind` 新增 `unknown-task`；`exitCodeFor()` 把它映射到 1，穷尽式 switch 迫使未来每个种类都选择一个退出码。自己对该种类做穷尽式 switch 的嵌入者必须加上这个 case（[升级指南](../../../../docs/upgrade-guide/v0.1.0/done-core-command/guide.md)）。
+- 注册了自己的 `done` 的插件现在在启动时以 `duplicate-registration` 失败；升级指南给出修法。
+- `help` 的期望输出与 README 命令表是用户可见措辞的两个家；两者一起改。
 
 ## Testing
 
-`tests/store.spec.ts` owns `complete()` (change, byte-identical no-op, untouched file on unknown id); `tests/commands.spec.ts` owns the command output and the usage rejections; `tests/cli.spec.ts` owns the exit-code mapping; `tests/cli.e2e.ts` runs the same flow through the built `lib/bin.js`; `tests/expected/help.expected.txt` pins the help line.
+`tests/store.spec.ts` 拥有 `complete()`（变更、字节相同的无操作、未知 id 时文件不被触碰）；`tests/commands.spec.ts` 拥有命令输出与用法拒绝；`tests/cli.spec.ts` 拥有退出码映射；`tests/cli.e2e.ts` 通过构建出的 `lib/bin.js` 跑同一流程；`tests/expected/help.expected.txt` 钉住 help 行。

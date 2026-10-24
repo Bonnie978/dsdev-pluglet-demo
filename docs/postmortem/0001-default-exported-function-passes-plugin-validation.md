@@ -1,53 +1,53 @@
-# Post-mortem 0001: `pluglet` crashed with a raw TypeError on a plugin that default-exports its `apply` function — the validator accepted `Function.prototype.apply` as the plugin's `apply`
+# Post-mortem 0001: `pluglet` 在一个默认导出 `apply` 函数的插件上以裸 TypeError 崩溃 — 校验器把 `Function.prototype.apply` 当成了插件的 `apply`
 
 Status: resolved (fix in the PR that closes Issue #17)
 
 ## Executive summary
 
-A user of the released 0.1.0 CLI wrote a plugin with `export const name = 'tag'` and `export default function apply(ctx) {...}`. `unwrapPlugin()` takes `ns.default ?? ns` as the plugin object and probes `typeof candidate.name === 'string'` and `typeof candidate.apply === 'function'`. A function satisfies both: its own `.name` is `"apply"` and it inherits `Function.prototype.apply`. The loader therefore built a plugin named `apply` whose `apply` was `Function.prototype.apply`, called it, and the process died with an engine TypeError and a stack trace that named `lib/plugins.js`, never the plugin file. All 27 unit tests passed and per-file coverage was 100% throughout, because the bug is a missing check: no line was uncovered, the input was simply never considered. The fix checks the category of the unwrapped value before probing fields and fails as `plugin-invalid` naming the file, the observed type and the two accepted shapes; the lasting lesson is that structural validation of an external value must establish what kind of value it is before duck-typing its fields, and that validators are tested with realistic wrong inputs through the real loader, not only with hand-built right ones.
+已发布的 0.1.0 CLI 的一位用户写了一个带 `export const name = 'tag'` 和 `export default function apply(ctx) {...}` 的插件。`unwrapPlugin()` 取 `ns.default ?? ns` 作为插件对象，并探测 `typeof candidate.name === 'string'` 与 `typeof candidate.apply === 'function'`。函数同时满足两者：它自己的 `.name` 是 `"apply"`，并且继承 `Function.prototype.apply`。加载器因此构造了一个名为 `apply`、其 `apply` 是 `Function.prototype.apply` 的插件，调用了它，进程随即死于引擎 TypeError，堆栈点名 `lib/plugins.js`，从未点名插件文件。全部 27 个单元测试通过，逐文件覆盖率全程 100%，因为这个 bug 是一个缺失的检查：没有哪一行未被覆盖，只是这个输入从未被考虑。修复在探测字段之前先检查解包值的类别，并以 `plugin-invalid` 失败，点名文件、观察到的类型和两种被接受的形状；持久的教训是，对外部值做结构校验必须先确立它是哪一类值再对字段做鸭子类型判断，并且校验器要用真实的错误输入经真实加载器测试，而不只用手工构造的正确输入。
 
 ## Summary
 
-Symptom: `pluglet list` (any command) with the plugin above listed in `pluglet.json` exits with an uncaught `TypeError` and a Node stack trace; stderr does not mention the plugin path or what is wrong with it. One bug; one mechanism; the surface message depends on how the engine reports a call to `Function.prototype.apply` on a non-callable receiver (`plugin.apply is not a function` on Node 24.11; the report quotes `Cannot read properties of undefined (reading 'commands')`).
+症状：`pluglet.json` 里列有上述插件时，`pluglet list`（任何命令）以未捕获的 `TypeError` 和一段 Node 堆栈退出；stderr 不提插件路径，也不说它哪里不对。一个 bug；一个机制；表面消息取决于引擎如何报告在不可调用的接收者上调用 `Function.prototype.apply`（Node 24.11 上是 `plugin.apply is not a function`；报告引用的是 `Cannot read properties of undefined (reading 'commands')`）。
 
 ## Impact
 
-Every 0.1.0 user whose plugin default-exports a function (or any non-object value) could not run any command while that plugin was configured, and had no actionable diagnostic. No data loss: the crash happens in `loadPlugins`, before any command runs or the store is written. Cost: a user report that questioned the test suite's credibility, plus the investigation recorded below.
+每个插件默认导出函数（或任何非对象值）的 0.1.0 用户，在该插件被配置期间无法运行任何命令，且没有可行动的诊断。没有数据丢失：崩溃发生在 `loadPlugins` 里，在任何命令运行或存储被写入之前。成本：一份质疑测试套件可信度的用户报告，加上下面记录的调查。
 
 ## Timeline
 
-1. 0.1.0 ships `unwrapPlugin` with `const candidate = (ns.default ?? ns) as Partial<PluginModule>` followed by two `typeof` probes. Unit tests feed it hand-built objects; the only plugin fixture in the composition and e2e tests is the well-formed `SHOUT_PLUGIN`.
-2. Issue #17: the user reports the crash with the plugin file quoted above and asks how it shipped with 27 passing tests and 100% coverage.
-3. Investigation reproduces the crash through the built bin with the user's exact file. The observed message (`plugin.apply is not a function`, thrown at `lib/plugins.js` in `loadPlugins`) differs from the report's text, which briefly suggested a second bug.
-4. A probe of the imported namespace settles it: `typeof ns.default === 'function'`, `candidate.name === 'apply'`, `candidate.apply === Function.prototype.apply`. One acceptance error, two engine-dependent message texts. The guards below assert on the typed failure, not on message text.
-5. Guards are written first and observed red on the unfixed `src/` and the unfixed built `lib/`; the fix lands; guards go green with per-file coverage still 100%.
+1. 0.1.0 发布的 `unwrapPlugin` 是 `const candidate = (ns.default ?? ns) as Partial<PluginModule>` 后接两个 `typeof` 探测。单元测试喂给它手工构造的对象；组合测试与 e2e 测试里唯一的插件 fixture 是良构的 `SHOUT_PLUGIN`。
+2. Issue #17：用户报告崩溃，附上上面引用的插件文件，并问它怎么能带着 27 个通过的测试和 100% 覆盖率发布。
+3. 调查用用户的原文件通过构建出的 bin 复现崩溃。观察到的消息（`plugin.apply is not a function`，在 `lib/plugins.js` 的 `loadPlugins` 中抛出）与报告的文本不同，一度暗示存在第二个 bug。
+4. 对导入的命名空间做一次探测定案：`typeof ns.default === 'function'`、`candidate.name === 'apply'`、`candidate.apply === Function.prototype.apply`。一个接受错误，两种依赖引擎的消息文本。下面的守卫断言类型化的失败，不断言消息文本。
+5. 先写守卫，在未修复的 `src/` 和未修复的构建产物 `lib/` 上观察到红；修复落地；守卫转绿，逐文件覆盖率仍为 100%。
 
-## Root cause #1 — duck typing on a value whose category was never established
+## Root cause #1 — 对一个从未确立类别的值做鸭子类型判断
 
-`src/plugins.ts`, `unwrapPlugin`: `ns.default ?? ns` is cast to `Partial<PluginModule>`, erasing the question of what the default export is. Then `typeof candidate.name !== 'string' || candidate.name === ''` and `typeof candidate.apply !== 'function'` are the only checks. For `export default function apply(ctx) {...}` both probes hit properties supplied by the function itself and by `Function.prototype`, so validation passes and `loadPlugins` calls `plugin.apply(ctx)` where `plugin.apply` is `Function.prototype.apply` with a plain object as receiver. The code looked reasonable because the two probes do express the contract ("has a name, has an apply") — they just express it against the wrong object.
+`src/plugins.ts` 的 `unwrapPlugin`：`ns.default ?? ns` 被断言为 `Partial<PluginModule>`，抹掉了"默认导出是什么"这个问题。随后 `typeof candidate.name !== 'string' || candidate.name === ''` 和 `typeof candidate.apply !== 'function'` 是仅有的检查。对于 `export default function apply(ctx) {...}`，两个探测命中的都是函数自身与 `Function.prototype` 提供的属性，于是校验通过，`loadPlugins` 调用 `plugin.apply(ctx)`，其中 `plugin.apply` 是 `Function.prototype.apply`，接收者是一个普通对象。这段代码看起来合理，因为两个探测确实表达了契约（"有 name，有 apply"）——只是表达在了错误的对象上。
 
 ## Why every test missed it
 
-- **Unit tests of the validator used hand-built right inputs.** `unwrapPlugin` was exercised with `{ name, apply() {} }`, `{ default: { name, apply() {} } }` and four objects missing fields. No case was a function, a string or a number, so the inherited-property path was never taken. Hand-built objects cannot carry a plugin author's realistic mistake; a module namespace with a default-exported function is one `import()` away and was never imported.
-- **Composition and e2e tests had one plugin fixture.** `loadPlugins`, `runCli` and the built-bin e2e all loaded `SHOUT_PLUGIN`; the failure-path fixtures were a module that throws at import and an `apply` that throws. Both exercise what happens after a well-formed module is recognised, not whether recognition is right.
-- **100% line and branch coverage held throughout.** Every line of `unwrapPlugin` executed in every run. Coverage measures lines executed, not inputs considered; a check that does not exist cannot show up as an uncovered line.
-- **The type cast made the compiler agree.** `as Partial<PluginModule>` on a value of type `unknown` typechecks under `strict`; nothing in the type system distinguishes "object with an `apply` method" from "function with the inherited `apply` method".
-- **`runCli` treats non-`PlugletError`s as defects and lets them propagate.** That contract is right for genuine defects, but it meant the misclassification surfaced as a raw stack trace about pluglet's own file rather than a `plugin-invalid` report about the plugin.
+- **校验器的单元测试用的是手工构造的正确输入。** `unwrapPlugin` 被 `{ name, apply() {} }`、`{ default: { name, apply() {} } }` 和四个缺字段的对象锻炼过。没有一个案例是函数、字符串或数字，所以继承属性那条路径从未被走到。手工构造的对象承载不了插件作者真实的错误；一个带默认导出函数的模块命名空间只差一次 `import()`，却从未被导入。
+- **组合测试与 e2e 测试只有一个插件 fixture。** `loadPlugins`、`runCli` 和构建产物 bin 的 e2e 全都加载 `SHOUT_PLUGIN`；失败路径的 fixture 是一个在导入时抛出的模块和一个会抛出的 `apply`。两者锻炼的都是良构模块被识别之后发生什么，而不是识别本身是否正确。
+- **100% 的行与分支覆盖率全程成立。** `unwrapPlugin` 的每一行在每次运行中都执行了。覆盖率度量的是执行过的行，不是考虑过的输入；一个不存在的检查不可能表现为未覆盖的行。
+- **类型断言让编译器点头。** 对 `unknown` 类型的值写 `as Partial<PluginModule>` 在 `strict` 下通过类型检查；类型系统里没有任何东西区分"带 `apply` 方法的对象"与"带继承 `apply` 方法的函数"。
+- **`runCli` 把非 `PlugletError` 当作缺陷并任其传播。** 这条契约对真正的缺陷是对的，但它意味着这次误分类表现为一段关于 pluglet 自己文件的裸堆栈，而不是一份关于插件的 `plugin-invalid` 报告。
 
 ## Guardrails added
 
-- Code: `unwrapPlugin` checks `typeof unwrapped !== 'object'` before any field probe and throws `PlugletError('plugin-invalid')` naming the path, the observed type and the two accepted shapes ([src/plugins.ts](../../src/plugins.ts)).
-- Unit guard: `tests/plugins.spec.ts` "rejects a non-object default export instead of probing its inherited properties" feeds a default-exported function, a string and a number. On the unfixed code it fails with `expected undefined to be an instance of PlugletError`.
-- Source-plane composition guard: `tests/cli.spec.ts` "reports a default-exported function plugin as a handled plugin-invalid failure, not a defect" drives `runCli` with the user's file. On the unfixed code it fails with `TypeError: plugin.apply is not a function`.
-- Real-entry guard: `tests/cli.e2e.ts` "rejects a default-exported function plugin with exit 1, naming the file and the fix, with no stack trace" spawns the built `lib/bin.js`. On the unfixed build it fails because stderr is a stack trace instead of `pluglet: plugin <path>: default export is a function...`.
-- Shared fixture: `DEFAULT_FUNCTION_PLUGIN` in `tests/harness.ts` is the user's plugin verbatim, so every tier loads the same realistic mistake.
-- Rule: [defensive pattern "校验先判类别再探测字段"](../defensive-patterns/general.md#校验先判类别再探测字段) and one line in the root `AGENTS.md`.
-- Decision record: [Agent Note: reject default-exported function plugins](../../.agents/notes/implemented/bug-fix/2026-10-23-reject-default-exported-function-plugins.md) records why the shape is rejected rather than adapted.
-- Consumer contract: the README "写一个插件" section names the two accepted module shapes and the load-time rejection of everything else.
+- 代码：`unwrapPlugin` 在任何字段探测之前检查 `typeof unwrapped !== 'object'`，并抛出点名路径、观察到的类型和两种被接受形状的 `PlugletError('plugin-invalid')`（[src/plugins.ts](../../src/plugins.ts)）。
+- 单元守卫：`tests/plugins.spec.ts` 的 "rejects a non-object default export instead of probing its inherited properties" 喂入一个默认导出函数、一个字符串和一个数字。在未修复的代码上它以 `expected undefined to be an instance of PlugletError` 失败。
+- 源码层组合守卫：`tests/cli.spec.ts` 的 "reports a default-exported function plugin as a handled plugin-invalid failure, not a defect" 用用户的文件驱动 `runCli`。在未修复的代码上它以 `TypeError: plugin.apply is not a function` 失败。
+- 真实入口守卫：`tests/cli.e2e.ts` 的 "rejects a default-exported function plugin with exit 1, naming the file and the fix, with no stack trace" spawn 构建出的 `lib/bin.js`。在未修复的构建产物上它失败，因为 stderr 是一段堆栈而不是 `pluglet: plugin <path>: default export is a function...`。
+- 共享 fixture：`tests/harness.ts` 里的 `DEFAULT_FUNCTION_PLUGIN` 是用户插件的原文，所以每一层加载的都是同一个真实错误。
+- 规则：[防御模式"校验先判类别再探测字段"](../defensive-patterns/general.md#校验先判类别再探测字段) 与根 `AGENTS.md` 里的一行。
+- 决策记录：[Agent Note：拒绝默认导出为函数的插件](../../.agents/notes/implemented/bug-fix/2026-10-23-reject-default-exported-function-plugins.md) 记录为什么拒绝而不是适配这种形状。
+- 消费者契约：README 的"写一个插件"一节点名两种被接受的模块形状，以及其他一切在加载时被拒绝。
 
 ## Lessons
 
-1. Before duck-typing a value that came from outside the process (a module namespace, parsed JSON, a CLI argument), assert its category: `typeof v === 'object'` and not a function. `Function.prototype` supplies `apply`, `call`, `bind`, `name` and `length`, so a function passes any probe for those names.
-2. Test a validator with the realistic wrong inputs an author will produce, loaded through the real loader, not only with hand-built right inputs. The fixture is the user's mistake, verbatim.
-3. 100% coverage of a validator proves every existing check ran once. It says nothing about checks that do not exist. Negative cases enumerate the input space, not the code.
-4. A third-party module failing to load must surface as a typed failure naming that module. A raw stack trace that names our own file is a report about us, not about the plugin, and the user cannot act on it.
+1. 对来自进程外部的值（模块命名空间、解析后的 JSON、CLI 参数）做鸭子类型判断之前，先断言它的类别：`typeof v === 'object'` 且不是函数。`Function.prototype` 提供 `apply`、`call`、`bind`、`name` 和 `length`，所以函数能通过对这些名字的任何探测。
+2. 用作者会真实产生的错误输入、经真实加载器加载来测试校验器，而不只用手工构造的正确输入。fixture 就是用户的错误原文。
+3. 校验器 100% 的覆盖率证明每个已存在的检查都跑过一次。它对不存在的检查什么也不说。负向案例枚举的是输入空间，不是代码。
+4. 第三方模块加载失败必须表现为点名该模块的类型化失败。一段点名我们自己文件的裸堆栈是关于我们的报告，不是关于插件的，用户无法据此行动。
