@@ -24,7 +24,12 @@ export class TaskStore {
    */
   constructor(readonly path: string) {}
 
-  /** @returns Every task in id order; an absent file reads as no tasks. */
+  /**
+   * Read the task file. Tasks are listed in insertion order: the order `add` appended
+   * them, which is ascending id order. `complete` keeps each task in place. The
+   * insertion-order case in `tests/store.spec.ts` pins this guarantee.
+   * @returns Every task in insertion order; an absent file reads as no tasks.
+   */
   list(): Task[] {
     if (!existsSync(this.path)) return []
     let raw: unknown
