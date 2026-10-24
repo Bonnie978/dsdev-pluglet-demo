@@ -5,7 +5,7 @@ description: 在 push、force push、标记 ready for review、或声称"检查�
 
 # 推送前检查：最小相关证据
 
-在一次 push 之前运行**一次**相关的本地证据。Git 钩子故意很窄（pre-commit 修 staged lint、查空白；pre-push 只跑增量类型检查）；CI 拥有全量覆盖与平台矩阵。这是指导不是脚本。
+在一次 push 之前运行**一次**相关的本地证据。Git 钩子故意很窄（pre-commit 查 staged 空白与 staged Markdown 换行；pre-push 只跑类型检查；仓库有 lint 修复器时可加 staged lint）；CI 拥有全量覆盖与平台矩阵。这是指导不是脚本。
 
 ## 1. 看清出站变更
 

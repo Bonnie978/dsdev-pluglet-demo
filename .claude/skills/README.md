@@ -2,6 +2,8 @@
 
 这套 skill 把 `deepseek-ai/deepseek-harness` 仓库里 Agent 主导的开发方式抽成可移植的工作流。领域规则（Cordis、会话格式等）不在这里；进入这里的是**方法**：分层常备指令、一事一家的文档层级、Agent Note 生命周期、postmortem→护栏、gate+负向对照、测试四原则、最小相关证据、PR 三段+Proof、文档与代码同 PR、散文标准。研究依据是 dsdev 项目里的 `research/ds-harness-dev-method.md`（不随 skill 复制进仓库）。
 
+**有意不复现**的 DS 机制：双语配对（`.zh.md` + 配对记录）、录制会话快照、加权审批与 Issue 策略 workflow、生成目录的新鲜度 gate。它们是 DS 的组织或领域特有机制；需要时按 `dsdev-gate-authoring` 自建。
+
 每个 skill 都是**指导而非脚本**：它告诉 Agent 读什么、判断什么、交付什么，不替代仓库自己的 `AGENTS.md`。
 
 ## 安装

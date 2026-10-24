@@ -24,12 +24,16 @@ export function workspaceGlobs(source) {
   return out
 }
 
+/** Manifest fields whose entries are dependency edges between workspace packages. */
+export const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+
 /**
  * Discover workspace packages under `root`.
  * @param {string} root - Repository root.
  * @returns {{ name: string, short: string, dir: string, manifest: Record<string, any>, workspaceDeps: string[] }[]}
- *   Packages sorted by directory; `short` is the directory basename used in gate ids,
- *   `workspaceDeps` the names of dependencies declared with the `workspace:` protocol.
+ *   Packages sorted by directory; `short` is the directory basename,
+ *   `workspaceDeps` the names declared with the `workspace:` protocol in any of
+ *   `DEPENDENCY_FIELDS`.
  */
 export function workspacePackages(root) {
   const file = join(root, 'pnpm-workspace.yaml')
@@ -47,18 +51,18 @@ export function workspacePackages(root) {
   }
   return dirs.filter(dir => existsSync(join(root, dir, 'package.json'))).sort().map((dir) => {
     const manifest = JSON.parse(readFileSync(join(root, dir, 'package.json'), 'utf8'))
-    const deps = { ...manifest.dependencies, ...manifest.devDependencies, ...manifest.peerDependencies }
+    const declared = DEPENDENCY_FIELDS.flatMap(field => Object.entries(manifest[field] ?? {}))
     return {
       name: manifest.name,
       short: dir.split('/').pop(),
       dir,
       manifest,
-      workspaceDeps: Object.entries(deps).filter(([, range]) => String(range).startsWith('workspace:')).map(([name]) => name).sort(),
+      workspaceDeps: [...new Set(declared.filter(([, range]) => String(range).startsWith('workspace:')).map(([name]) => name))].sort(),
     }
   })
 }
 
-/** Test tiers a package registers as package.json scripts; each one becomes a `<tier>:<short>` gate. */
+/** Test tiers a package registers as package.json scripts; each one becomes a `<tier>:<dir>` gate. */
 export const TIERS = ['coverage', 'e2e']
 
 /**
