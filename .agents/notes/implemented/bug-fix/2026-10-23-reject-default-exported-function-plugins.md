@@ -1,23 +1,23 @@
-# Agent Note: Reject plugins whose default export is a function instead of adapting them
+# Agent Note: 拒绝默认导出为函数的插件，而不是适配它们
 
 Status: implemented
 
 ## Problem
 
-Issue #17 reported a plugin written as `export const name = 'tag'` plus `export default function apply(ctx) {...}`. `unwrapPlugin()` accepted the function as the plugin object because a function owns `.name` and inherits `Function.prototype.apply`; the CLI then crashed with an engine TypeError that named `lib/plugins.js` rather than the plugin ([postmortem 0001](../../../../docs/postmortem/0001-default-exported-function-passes-plugin-validation.md)). Two responses were possible: treat the shape as a third accepted plugin format, or reject it with an actionable `plugin-invalid`.
+Issue #17 报告了一个写成 `export const name = 'tag'` 加 `export default function apply(ctx) {...}` 的插件。`unwrapPlugin()` 把该函数当作插件对象接受了，因为函数自带 `.name` 并继承 `Function.prototype.apply`；CLI 随后以一个引擎 TypeError 崩溃，它点名的是 `lib/plugins.js` 而不是插件（[postmortem 0001](../../../../docs/postmortem/0001-default-exported-function-passes-plugin-validation.md)）。有两种可能的应对：把这种形状当作第三种被接受的插件格式，或以可行动的 `plugin-invalid` 拒绝它。
 
 ## Decision
 
-`unwrapPlugin()` accepts exactly two module shapes: named exports `name` and `apply`, or a default-exported object carrying both. Before probing any field it checks `typeof unwrapped === 'object'`; a default export of any other category fails at load with `PlugletError('plugin-invalid')` whose message names the plugin path, the observed `typeof`, and both accepted shapes. The README "写一个插件" section is the consumer-facing home of this contract; `docs/defensive-patterns/general.md` holds the general rule the fix follows.
+`unwrapPlugin()` 恰好接受两种模块形状：命名导出 `name` 和 `apply`，或携带两者的默认导出对象。探测任何字段之前，它先检查 `typeof unwrapped === 'object'`；任何其他类别的默认导出在加载时以 `PlugletError('plugin-invalid')` 失败，其消息点名插件路径、观察到的 `typeof` 以及两种被接受的形状。README 的"写一个插件"一节是这条契约面向消费者的家；`docs/defensive-patterns/general.md` 持有该修复所遵循的一般规则。
 
 ## Alternatives considered
 
-- **Accept the hybrid shape: named `name` plus a default-exported function used as `apply`.** Rejected. It adds a third documented format that no one asked for, is ambiguous when a module has both a named `apply` and a default function, and the user's complaint was the missing diagnosis, not the missing format. It can be re-proposed as a Feature if plugin authors keep writing it; the rejection message tells them the two shapes that work today.
-- **Wrap every non-`PlugletError` thrown from a plugin's `apply` into `plugin-invalid` naming the plugin.** Rejected for this change. `runCli` documents that defects propagate; wrapping them would hide plugin authors' own stack traces behind our message and change a contract the CLI tests pin. It is a separate decision about defect reporting, independent of the validation bug.
-- **Require own properties (`Object.hasOwn(candidate, 'apply')`) instead of a category check.** Rejected. It would reject a default-exported class instance whose `apply` lives on its prototype, which the object shape legitimately permits. Checking the category first is the precise fix: it rules out the one family of values (functions, primitives) whose inherited properties fool the field probes while leaving every object shape alone.
+- **接受混合形状：命名的 `name` 加一个用作 `apply` 的默认导出函数。** 否决。它增加了第三种没人要求的文档化格式，在模块同时有命名 `apply` 和默认函数时有歧义，而且用户的抱怨是缺少诊断，不是缺少格式。若插件作者持续这样写，可以作为 Feature 重新提议；拒绝消息告诉他们今天可用的两种形状。
+- **把插件 `apply` 抛出的每个非 `PlugletError` 包装成点名该插件的 `plugin-invalid`。** 本次变更否决。`runCli` 记载缺陷会向上传播；包装它们会把插件作者自己的堆栈藏在我们的消息后面，并改变 CLI 测试钉住的一条契约。这是关于缺陷报告的独立决策，与校验 bug 无关。
+- **要求自有属性（`Object.hasOwn(candidate, 'apply')`）而不是类别检查。** 否决。它会拒绝 `apply` 住在原型上的默认导出类实例，而对象形状合法地允许这种情况。先检查类别才是精确的修复：它排除了继承属性会骗过字段探测的那一族值（函数、原始值），同时不动任何对象形状。
 
 ## Consequences
 
-- A default-exported function plugin now exits 1 with `pluglet: plugin <path>: default export is a function, not a plugin object; ...` and no stack trace; no previously working configuration changes behavior, so no upgrade guide is needed.
-- Plugin authors get the accepted shapes from the error itself and from the README; the loader never silently adapts a shape it did not document.
-- Validation of module shapes is tested at three tiers with the user's file verbatim (`DEFAULT_FUNCTION_PLUGIN` in `tests/harness.ts`); a future shape change must update that fixture and the README together.
+- 默认导出为函数的插件现在以 1 退出，输出 `pluglet: plugin <path>: default export is a function, not a plugin object; ...` 且没有堆栈；没有任何此前可用的配置改变行为，所以不需要升级指南。
+- 插件作者从错误本身和 README 得到被接受的形状；加载器永不静默适配一个它没有文档化的形状。
+- 模块形状的校验在三层用用户的文件原样测试（`tests/harness.ts` 里的 `DEFAULT_FUNCTION_PLUGIN`）；未来改变形状必须同时更新该 fixture 与 README。
