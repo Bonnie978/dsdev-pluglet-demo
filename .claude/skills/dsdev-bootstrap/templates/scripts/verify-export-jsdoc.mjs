@@ -3,7 +3,8 @@
  * `src/` is immediately preceded by a JSDoc block, and exported functions document `@param`
  * for each parameter and `@returns` when they return a value (a `: void` annotation, or for
  * unannotated JavaScript the absence of a `return <expr>` statement, marks a void function).
- * Re-exports are exempt. Adapt the `SRC` predicate when sources live elsewhere.
+ * `@param` types may nest one level of braces (`{{ a: number }}`) and optional names may be
+ * bracketed (`[name]`). Re-exports are exempt. Adapt the `SRC` predicate when sources live elsewhere.
  */
 import { readFileSync } from 'node:fs'
 import { resolveRoot, walk } from './lib/repo-files.mjs'
@@ -58,7 +59,7 @@ for (const rel of walk(root, SRC)) {
     if (m[1] === 'function') {
       const sig = lines.slice(i, i + 5).join(' ')
       const params = splitTopLevel(sig.match(/\(([^)]*)\)/)?.[1] ?? '').map(p => p.trim().replace(/[?:=].*$/, '').replace(/^\.\.\./, '')).filter(p => p && !p.startsWith('{') && !p.startsWith('['))
-      for (const p of params) if (!new RegExp(`@param\\s+(?:\\{[^}]*\\}\\s+)?${p}\\b`).test(doc)) errors.push(`${rel}:${i + 1}: @param ${p} missing`)
+      for (const p of params) if (!new RegExp(`@param\\s+(?:\\{(?:[^{}]|\\{[^{}]*\\})*\\}\\s+)?\\[?${p}\\b`).test(doc)) errors.push(`${rel}:${i + 1}: @param ${p} missing`)
       const annotated = /\)\s*:\s*[A-Za-z_$<]/.test(sig)
       const isVoid = annotated ? /\)\s*:\s*(void|Promise<void>)\b/.test(sig) : !returnsValue(lines, i)
       if (!isVoid && !/@returns?\b/.test(doc)) errors.push(`${rel}:${i + 1}: @returns missing on non-void function`)

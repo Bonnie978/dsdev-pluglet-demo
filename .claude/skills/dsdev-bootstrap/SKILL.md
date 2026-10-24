@@ -94,7 +94,7 @@ install-hooks: ; node scripts/install-hooks.mjs
 { id: 'e2e', label: 'real entry path e2e', command: 'pnpm', args: ['run', '--silent', 'test:e2e'], needs: ['typecheck'] },
 ```
 
-把**每一个**测试层都登记进 `check-all`：CI 跑的是 `check-all`，不在里面的层 CI 永远不跑。覆盖率门登记 `test:coverage` 而不是 `test`（覆盖率才是门）；有可执行入口的仓库登记真实入口 e2e。写进 testing.md 或 AGENTS.md 的"CI 执行 X"必须对应 gates.config 里一个真实条目——接入后用一个负向对照证明：把 bin 的退出码改成恒为 0，`check-all` 必须变红。
+覆盖率阈值同时设行与分支（只设行阈值时"加一条未测分支"的负向对照会假绿）。用 `node --test` 的仓库需要 Node ≥ 22.8（glob 与覆盖率阈值参数），把版本前提写进 development.md 与 workflow。把**每一个**测试层都登记进 `check-all`：CI 跑的是 `check-all`，不在里面的层 CI 永远不跑。覆盖率门登记 `test:coverage` 而不是 `test`（覆盖率才是门）；有可执行入口的仓库登记真实入口 e2e。写进 testing.md 或 AGENTS.md 的"CI 执行 X"必须对应 gates.config 里一个真实条目——接入后用一个负向对照证明：把 bin 的退出码改成恒为 0，`check-all` 必须变红。
 
 `doc-sync` 默认等于 `doc-quick`；有需要构建产物的文档 gate（例如编译文档里的代码块）时才往 `doc-sync` 里加，没有就保留这个别名，让 skill 与 CI 用同一个名字。模板的 `hygiene` 聚合默认只有 `verify-lockfile`（按 lockfile 探测包管理器做一致性检查）；非 Node 仓库换成自己的卫生检查或删掉该聚合及其在 package.json、AGENTS.md、development.md 里的所有引用——`run-gates` 对空聚合直接报错，因为永远绿的聚合什么都没守。
 

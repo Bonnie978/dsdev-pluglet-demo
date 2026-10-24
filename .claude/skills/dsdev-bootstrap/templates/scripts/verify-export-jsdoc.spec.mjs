@@ -25,3 +25,8 @@ test('generic parameters are not split at inner commas', () => {
   const f = fixture({ 'src/a.ts': '/** X.\n * @param ctx - c\n * @returns r\n */\nexport function h(ctx: Omit<Record<string, number>, \'k\'>): number { return 1 }\n' })
   try { const r = runGate('verify-export-jsdoc.mjs', f.root); assert.equal(r.status, 0, r.out) } finally { f.dispose() }
 })
+
+test('object-literal @param types and bracketed optional names count as documented', () => {
+  const f = fixture({ 'src/a.mjs': '/**\n * F.\n * @param {{ n: number }} c - counts\n * @param {string} [name] - optional\n * @returns {string} s\n */\nexport function fmt(c, name) {\n  return `${c.n}${name}`\n}\n' })
+  try { const r = runGate('verify-export-jsdoc.mjs', f.root); assert.equal(r.status, 0, r.out) } finally { f.dispose() }
+})

@@ -36,7 +36,7 @@ description: 写、改、评审、裁剪或审计任何散文时使用：Markdow
 - **一个段落一个物理行**（`verify-md-wrap`），用编辑器软换行；代码块、表格、列表保留格式。
 - **带 `ts` 标记的代码块必须编译**（有 doc-typecheck 的项目）；粘贴的类型声明用等价标记并登记到清单，防止漂移。
 - **改了被文档化的类型就同一变更更新拥有它的子系统页。**
-- **一个仓库一种文档语言**：README、docs、Agent Note、postmortem、注释的正文用同一种语言；机器检查的结构 token（`# Agent Note:`、`Status:`、`## Problem`/`## Decision`、PR 模板的 `## Motivation` 等）保持英文原样，不算混语。写新文档前看一眼同类文件用的是哪种语言。维护双语的仓库按配对规则两边一起改并重新记录，任何一边都可以是本次的权威。
+- **一个仓库一种文档语言**：README、docs、Agent Note、postmortem 的正文用同一种语言（代码注释跟随代码库已有的语言，模板脚本的英文注释不算混语）；机器检查的结构 token（`# Agent Note:`、`Status:`、`## Problem`/`## Decision`、PR 模板的 `## Motivation` 等）保持英文原样，不算混语。写新文档前看一眼同类文件用的是哪种语言。维护双语的仓库按配对规则两边一起改并重新记录，任何一边都可以是本次的权威。
 - **注释与 JSDoc 陈述完整契约，不是推理记录。** 保留行为、失败、时机、所有权、模态、例外、后果、非显然的定位；删除叙述、测试走读、评审分析、代码复述。
 - **直接写：命名行为者与事实。** 不用隐喻。写 `contract`/`boundary`/`shape`/`surface`/`seam`/`gate`/`vocabulary` 之前先问有没有更精确的词（`response fields`、`JSON validation`、`ESM exports`）；`contract` 留给真正的义务，`boundary` 留给字面的进程/线上/安全/事务/生命周期边界。
 - **历史引用用 tag、Issue 或 PR 号，不用提交哈希**（`verify-repository-references`）；必须引用提交时在该行标 `<!-- commit-ref-ok -->` 并说明原因。
