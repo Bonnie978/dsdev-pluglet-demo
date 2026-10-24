@@ -25,10 +25,11 @@ export class TaskStore {
   constructor(readonly path: string) {}
 
   /**
-   * Read the task file. Tasks are listed in insertion order: the order `add` appended
-   * them, which is ascending id order. `complete` keeps each task in place. The
-   * insertion-order case in `tests/store.spec.ts` pins this guarantee.
-   * @returns Every task in insertion order; an absent file reads as no tasks.
+   * Read the task file. Tasks are listed in stored order. `add` appends with one above the
+   * highest stored id and `complete` keeps each task in place, so a file written only by them
+   * lists in ascending id order; `publish` stores the array it is given in that order. The
+   * insertion-order and publish-order cases in `tests/store.spec.ts` pin this.
+   * @returns Every task in stored order; an absent file reads as no tasks.
    */
   list(): Task[] {
     if (!existsSync(this.path)) return []
@@ -77,7 +78,7 @@ export class TaskStore {
   }
 
   /**
-   * Replace the whole task list atomically.
+   * Replace the whole task list atomically. `list` returns `tasks` in the order given.
    * @param tasks - The complete new state.
    */
   publish(tasks: readonly Task[]): void {
