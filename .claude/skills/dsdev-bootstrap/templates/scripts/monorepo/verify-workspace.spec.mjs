@@ -56,3 +56,10 @@ test('an unsupported workspace glob fails instead of matching nothing', () => {
   const f = fixture({ ...valid(), 'pnpm-workspace.yaml': 'packages:\n  - "packages/**"\n' })
   try { const r = runGate('verify-workspace.mjs', f.root); assert.equal(r.status, 1); assert.match(r.out, /unsupported pnpm-workspace\.yaml glob "packages\/\*\*"/) } finally { f.dispose() }
 })
+
+test('threshold flags without --experimental-test-coverage are named (Node ignores them)', () => {
+  const files = valid()
+  files['packages/a/package.json'] = JSON.stringify({ name: '@x/a', exports: './src/index.mjs', scripts: { test: 'node --test', 'test:coverage': 'node --test --test-coverage-lines=100 --test-coverage-branches=100' } })
+  const f = fixture(files)
+  try { const r = runGate('verify-workspace.mjs', f.root); assert.equal(r.status, 1); assert.match(r.out, /packages\/a\/package\.json: scripts\["test:coverage"\] lacks --experimental-test-coverage/) } finally { f.dispose() }
+})

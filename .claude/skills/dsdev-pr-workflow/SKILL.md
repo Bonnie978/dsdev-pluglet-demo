@@ -64,7 +64,7 @@ Testing 只写**实际运行**的方法；交给 CI 的写"CI: <lane>"。pending
 - **先用 `gh pr create` 按模板开每一层 PR**（底层 base 为 trunk，上层 base 为下层分支），再按 PR 号链接：`gh stack link --base <trunk> <bottom-pr> … <top-pr>`。传分支名时 `link` 会自动建 PR（自动标题、可能是 draft），绕过 PR 模板。stack 号与 Issue/PR 共用编号空间（例如 stack 可能是 #8）；`link` 的第一个数字若匹配到已有 stack 会被当作"追加到该 stack"，所以先确认编号含义。
 - 用 GraphQL `PullRequest.stack { number size }` 与 `stackEntry.position` 确认成员资格与顺序；base 分支只建立预期顺序。作者不同 → 先问再链接。永不自动解散、重排、重建已有 stack。
 - `link` 建立的 stack 在本地没有跟踪状态：`gh stack view/sync/push/rebase` 会报 "not part of a stack"。需要本地级联 rebase 时，先 `gh stack init <bottom-branch> … <top-branch>` 接管分支。刷新只在合并状态或规则要求时做：`gh stack sync` 一步完成 fetch、级联 rebase、`--force-with-lease --atomic` 发布，发布先于验证，必须立即按 [dsdev-pre-push-checks](../dsdev-pre-push-checks/SKILL.md) 验证每一层；或增量 merge-forward。
-- 合并前重查官方 stack；每个选中 PR 开放、非 draft、顺序正确、每层 CI 的 head SHA 与当前 head 一致且全部通过。`gh stack merge` 只预检 open/非 draft，分支保护在服务端合并时才评估；仓库没有分支保护（例如免费私有仓库读取规则返回 403）时，"满足评审与检查"完全由你核对。
+- 合并前重查官方 stack；每个选中 PR 开放、非 draft、顺序正确、每层 CI 的 head SHA 与当前 head 一致且全部通过、每层评审闭环（见"合并前"）。`gh stack merge` 只预检 open/非 draft，分支保护在服务端合并时才评估；仓库没有分支保护（例如免费私有仓库读取规则返回 403）时，"满足评审与检查"完全由你核对。
 - `gh stack merge <stack-number> --yes --merge`（部分落地传边界 PR 号）。**显式传合并方式**：不传时非交互模式沿用上次用过的方式。不逐 PR 合并，不手工重定向。阻塞 → 在拥有的 PR 解决或停下报告。
 - 落地形态：整个选中范围生成**一个**合并提交，各 PR 的 `mergeCommit` 相同；上层 PR 的 base 不会被重定向，但其 `Fixes #N` 仍会关闭 Issue。等每个 PR 报告 `MERGED`、每个被解决的 Issue 报告 `CLOSED`。
 - `gh stack merge` 不删分支。之后单独一步：对每个分支先确认 `gh pr list --state open --base <branch>` 为 0，再 `git push origin --delete <branch>`。
@@ -76,6 +76,7 @@ Testing 只写**实际运行**的方法；交给 CI 的写"CI: <lane>"。pending
 
 ## 合并前
 
+- **评审闭环**：等仓库配置的每个评审者（人或 bot，例如 Codex review）对**当前 head** 给出结论；每个评审线程都有回复——修复（回复里写携带修复的提交）或有技术理由的反驳——并已 resolve。CI 全绿但评审未完成或有未回复线程时不合并。合并后才落下的评审意见当作新 Issue 或跟进 PR 处理，不能忽略。
 - 相关检查按 [dsdev-pre-push-checks](../dsdev-pre-push-checks/SKILL.md) 通过且报告。
 - 文档、Agent Note（移到 implemented）、升级指南、快照都在这个 PR 里。
 - 不绕过合并要求。

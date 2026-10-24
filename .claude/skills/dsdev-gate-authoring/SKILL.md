@@ -53,7 +53,7 @@ CI 以聚合为单位组织 lane。本地不要默认跑 `check-all`：按 [dsde
 
 ## 钩子保持窄
 
-pre-commit 只做 staged 的快速检查（lint 修复、空白、配对记录）；pre-push 只做增量类型检查。测试、快照、文档 gate、构建、hygiene 都不进钩子——CI 拥有全量。
+pre-commit 只做 staged 的快速检查（空白、Markdown 换行；有 lint 修复器或双语配对时再加）；pre-push 只做增量类型检查。测试、快照、文档 gate、构建、hygiene 都不进钩子——CI 拥有全量。
 
 ## 文档
 

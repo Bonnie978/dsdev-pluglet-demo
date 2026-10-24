@@ -6,7 +6,9 @@
  * - `scripts.test` exists; a package with `exports` declares `test:coverage`; a package with
  *   `bin` declares `test:e2e`. `scripts/gates.config.mjs` turns each tier script into a
  *   `<tier>:<dir>` gate inside `check-all`, so a missing script is a tier CI never runs.
- * - Every declared tier script enforces `--test-coverage-lines=100` and `--test-coverage-branches=100`.
+ * - Every declared tier script enables `--experimental-test-coverage` (without it Node ignores the
+ *   threshold flags and the tier passes with any coverage) and enforces `--test-coverage-lines=100`
+ *   and `--test-coverage-branches=100`.
  * - Workspace dependencies use the `workspace:` protocol and are mirrored in the package
  *   `tsconfig.json` `references`; the root `tsconfig.json` references every package.
  */
@@ -39,7 +41,7 @@ for (const p of packages) {
   const tiers = TIERS.filter(t => scripts[`test:${t}`])
   if (tiers.length === 0) errors.push(`${at}/package.json: declares no test tier (${TIERS.map(t => `test:${t}`).join(' or ')})`)
   for (const t of tiers) {
-    for (const flag of ['--test-coverage-lines=100', '--test-coverage-branches=100']) {
+    for (const flag of ['--experimental-test-coverage', '--test-coverage-lines=100', '--test-coverage-branches=100']) {
       if (!scripts[`test:${t}`].includes(flag)) errors.push(`${at}/package.json: scripts["test:${t}"] lacks ${flag}`)
     }
   }
